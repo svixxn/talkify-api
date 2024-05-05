@@ -1,0 +1,1 @@
+ALTER TABLE "users" ALTER COLUMN "slug" SET DATA TYPE varchar(256);

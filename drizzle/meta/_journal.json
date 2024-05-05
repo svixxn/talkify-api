@@ -1,0 +1,41 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1714827760329,
+      "tag": "0000_safe_boomer",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1714849889856,
+      "tag": "0001_third_frightful_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1714854048531,
+      "tag": "0002_sturdy_photon",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1714855318016,
+      "tag": "0003_ambiguous_mandarin",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1714855456594,
+      "tag": "0004_mature_wrecking_crew",
+      "breakpoints": true
+    }
+  ]
+}
