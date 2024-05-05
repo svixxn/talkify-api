@@ -1,3 +1,3 @@
 export function slugify(name: string) {
-  return name.replace(" ", "-").toLowerCase();
+  return name.replace(/ /g, "-").toLowerCase();
 }

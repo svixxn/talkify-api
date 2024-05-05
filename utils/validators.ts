@@ -4,13 +4,13 @@ export function isValidCreateUserRequest(body: any): {
   isValid: boolean;
   error: string;
 } {
-  if (typeof body === "object")
+  if (typeof body !== "object")
     return {
       isValid: false,
       error: "Invalid body type",
     };
 
-  if (typeof body.name !== "string" && body.name.length < 4)
+  if (typeof body.name !== "string" || body.name.length < 4)
     return {
       isValid: false,
       error: "Name should be longer than 3 characters",
