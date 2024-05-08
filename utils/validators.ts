@@ -1,9 +1,6 @@
-import { CreateUserRequest } from "types";
+import { ValidatorResponse } from "types";
 
-export function isValidCreateUserRequest(body: any): {
-  isValid: boolean;
-  error: string;
-} {
+export function isValidCreateUserRequest(body: any): ValidatorResponse {
   if (typeof body !== "object")
     return {
       isValid: false,
@@ -20,6 +17,31 @@ export function isValidCreateUserRequest(body: any): {
     return {
       isValid: false,
       error: "Field 'age' is missing or invalid",
+    };
+
+  return {
+    isValid: true,
+    error: "",
+  };
+}
+
+export function isValidSignInRequest(body: any): ValidatorResponse {
+  if (typeof body !== "object")
+    return {
+      isValid: false,
+      error: "Invalid body type",
+    };
+
+  if (typeof body.email !== "string")
+    return {
+      isValid: false,
+      error: "Email is required",
+    };
+
+  if (typeof body.password !== "string")
+    return {
+      isValid: false,
+      error: "Password is required",
     };
 
   return {

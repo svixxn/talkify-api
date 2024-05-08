@@ -1,15 +1,13 @@
 import express from "express";
-import {
-  getAllUsers,
-  createUser,
-  getUserBySlug,
-} from "../controllers/userController";
+import { getAllUsers, getUserBySlug } from "../controllers/userController";
+
+import { signUp } from "../controllers/authController";
 
 const router = express.Router();
 
 router.get("/", getAllUsers);
 
-router.post("/", createUser);
+router.post("/", signUp);
 
 router.get("/:slug", getUserBySlug);
 
