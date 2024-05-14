@@ -23,3 +23,15 @@ export async function getUserBySlug(req: Request, res: Response) {
 
   return APIResponse(res, 200, "success", { user });
 }
+
+export async function getCurrentUser(req: Request, res: Response) {
+  if (!res.locals.user) {
+    return APIResponse(
+      res,
+      404,
+      "You don't have permission to perform this action"
+    );
+  }
+
+  return APIResponse(res, 200, "Success", res.locals.user);
+}

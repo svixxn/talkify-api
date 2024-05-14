@@ -19,6 +19,12 @@ export function isValidCreateUserRequest(body: any): ValidatorResponse {
       error: "Field 'age' is missing or invalid",
     };
 
+  if (typeof body.email !== "string")
+    return {
+      isValid: false,
+      error: "Field 'email' is missing or invalid",
+    };
+
   return {
     isValid: true,
     error: "",

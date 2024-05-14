@@ -10,6 +10,6 @@ export function signInJWT(id: string): string | { error: string } {
   const JWT_SECRET: Secret = process.env.JWT_SECRET;
 
   return jwt.sign({ id }, JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_AT || 3600,
+    expiresIn: process.env.JWT_EXPIRES_AT || "24h",
   });
 }

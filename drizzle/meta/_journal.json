@@ -36,6 +36,20 @@
       "when": 1714855456594,
       "tag": "0004_mature_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1715720769790,
+      "tag": "0005_lumpy_sleeper",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1715720946177,
+      "tag": "0006_volatile_mastermind",
+      "breakpoints": true
     }
   ]
 }

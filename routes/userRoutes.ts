@@ -1,9 +1,18 @@
 import express from "express";
-import { getAllUsers, getUserBySlug } from "../controllers/userController";
+import {
+  getAllUsers,
+  getCurrentUser,
+  getUserBySlug,
+} from "../controllers/userController";
 
-import { signUp } from "../controllers/authController";
+import { signIn, signUp } from "../controllers/authController";
+import { checkAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
+
+router.get("/me", checkAuth, getCurrentUser);
+
+router.post("/sign-in", signIn);
 
 router.get("/", getAllUsers);
 
