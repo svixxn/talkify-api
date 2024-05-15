@@ -2,9 +2,10 @@ import { NextFunction, Request, Response } from "express";
 import { APIResponse } from "../utils/general";
 import jwt, { Secret } from "jsonwebtoken";
 import { db } from "../config/db";
-import { users } from "../config/schema";
+import { User, users } from "../config/schema";
 import { eq } from "drizzle-orm";
 import { JwtDecodeSchema } from "types";
+import { httpStatus } from "../utils/constants";
 
 export async function checkAuth(
   req: Request,
@@ -24,18 +25,26 @@ export async function checkAuth(
   if (!token) {
     return APIResponse(
       res,
-      401,
-      "You don't have access to perform this action"
+      httpStatus.Unauthorized.code,
+      httpStatus.Unauthorized.message
     );
   }
 
   if (!process.env.JWT_SECRET)
-    return APIResponse(res, 400, "No jwt secret specified");
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "No jwt secret specified"
+    );
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
   if (typeof decoded === "string" || !decoded.id) {
-    return APIResponse(res, 400, "There was an issue during identifying user");
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "There was an issue during identifying user"
+    );
   }
 
   const user = await db
@@ -45,7 +54,11 @@ export async function checkAuth(
     .limit(1);
 
   if (user.length === 0) {
-    return APIResponse(res, 400, "This user is not exist anymore");
+    return APIResponse(
+      res,
+      httpStatus.NotFound.code,
+      "This user is not exist anymore"
+    );
   }
 
   res.locals.user = user[0];

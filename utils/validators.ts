@@ -1,4 +1,5 @@
 import { ValidatorResponse } from "types";
+import { z } from "zod";
 
 export function isValidCreateUserRequest(body: any): ValidatorResponse {
   if (typeof body !== "object")
@@ -10,7 +11,7 @@ export function isValidCreateUserRequest(body: any): ValidatorResponse {
   if (typeof body.name !== "string" || body.name.length < 4)
     return {
       isValid: false,
-      error: "Name should be longer than 3 characters",
+      error: "Name should be a string and longer than 3 characters",
     };
 
   if (typeof body.age !== "number")
@@ -25,29 +26,19 @@ export function isValidCreateUserRequest(body: any): ValidatorResponse {
       error: "Field 'email' is missing or invalid",
     };
 
-  return {
-    isValid: true,
-    error: "",
-  };
-}
-
-export function isValidSignInRequest(body: any): ValidatorResponse {
-  if (typeof body !== "object")
+  if (typeof body.password !== "string" || body.password.length < 6)
     return {
       isValid: false,
-      error: "Invalid body type",
+      error: "Password should be a string and longer than 5 characters",
     };
 
-  if (typeof body.email !== "string")
+  if (
+    typeof body.confirmPassword !== "string" ||
+    body.password !== body.confirmPassword
+  )
     return {
       isValid: false,
-      error: "Email is required",
-    };
-
-  if (typeof body.password !== "string")
-    return {
-      isValid: false,
-      error: "Password is required",
+      error: "Passwords don't match",
     };
 
   return {
@@ -55,3 +46,11 @@ export function isValidSignInRequest(body: any): ValidatorResponse {
     error: "",
   };
 }
+
+export const SignInRequest = z.object({
+  email: z
+    .string()
+    .email("You should provide a valid email")
+    .min(3, "Email should be al least 3 characters long"),
+  password: z.string().min(6, "Password should be al least 6 characters long"),
+});
