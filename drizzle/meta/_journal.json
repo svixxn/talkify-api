@@ -50,6 +50,13 @@
       "when": 1715720946177,
       "tag": "0006_volatile_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1720362089725,
+      "tag": "0007_mature_calypso",
+      "breakpoints": true
     }
   ]
 }
