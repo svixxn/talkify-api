@@ -10,13 +10,13 @@ import { checkAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-router.get("/me", checkAuth, getCurrentUser);
-
 router.post("/sign-in", signIn);
 
 router.get("/", getAllUsers);
 
 router.post("/", signUp);
+
+router.get("/me", checkAuth, getCurrentUser);
 
 router.get("/:slug", getUserBySlug);
 

@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import userRoutes from "./routes/userRoutes";
+import chatRoutes from "./routes/chatRoutes";
 
 dotenv.config();
 
@@ -16,5 +17,7 @@ app.get(["/api", "/api/version"], (req: Request, res: Response) => {
 });
 
 app.use("/api/users", userRoutes);
+
+app.use("/api/chats", chatRoutes);
 
 export default app;
