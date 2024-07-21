@@ -37,7 +37,17 @@ export async function checkAuth(
       "No jwt secret specified"
     );
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  let decoded: jwt.JwtPayload | string;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "The token has expired"
+    );
+  }
 
   if (typeof decoded === "string" || !decoded.id) {
     return APIResponse(

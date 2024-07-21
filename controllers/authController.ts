@@ -4,6 +4,7 @@ import {
   NewUser,
   insertUserSchema,
   signUpUserRequest,
+  loginUserRequest,
   users,
 } from "../config/schema";
 import { APIResponse } from "../utils/general";
@@ -11,7 +12,6 @@ import { slugify } from "../utils/general";
 import { httpStatus } from "../utils/constants";
 import { signInJWT } from "../utils/auth";
 import { eq } from "drizzle-orm";
-import { SignInRequest } from "../utils/validators";
 
 export async function signUp(req: Request, res: Response) {
   try {
@@ -35,7 +35,7 @@ export async function signUp(req: Request, res: Response) {
 }
 
 export async function signIn(req: Request, res: Response) {
-  const user = SignInRequest.parse(req.body);
+  const user = loginUserRequest.parse(req.body);
 
   try {
     const user = await db

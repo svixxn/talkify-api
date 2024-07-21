@@ -95,10 +95,8 @@ export const media = pgTable("media", {
 
 //Zod schemas
 export const insertUserSchema = createInsertSchema(users);
-
 export const insertChatSchema = createInsertSchema(chats);
 export const updateChatSchema = insertChatSchema.partial();
-
 export const signUpUserRequest = insertUserSchema.pick({
   name: true,
   age: true,
@@ -109,11 +107,13 @@ export const loginUserRequest = insertUserSchema.pick({
   email: true,
   password: true,
 });
+export const inviteUsersToChatSchema = z.object({
+  userIds: z.array(z.number()),
+});
 
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = z.infer<typeof signUpUserRequest>;
-
 export type Chat = typeof chats.$inferSelect;
 export type NewChat = typeof chats.$inferInsert;
 export type Message = typeof messages.$inferSelect;
