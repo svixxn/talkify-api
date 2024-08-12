@@ -12,6 +12,7 @@ import { slugify } from "../utils/general";
 import { httpStatus } from "../utils/constants";
 import { signInJWT } from "../utils/auth";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export async function signUp(req: Request, res: Response) {
   try {
@@ -19,10 +20,23 @@ export async function signUp(req: Request, res: Response) {
 
     const slug = slugify(req.body.name);
 
-    await db.insert(users).values({ ...user, slug });
+    bcrypt.genSalt(10, function (err, salt) {
+      bcrypt.hash(req.body.password, salt, async function (err, hash) {
+        if (err)
+          return APIResponse(
+            res,
+            httpStatus.BadRequest.code,
+            "There was a problem during hashing your password"
+          );
+
+        await db.insert(users).values({ ...user, slug, password: hash });
+      });
+    });
+
+    const { password, ...newUser } = user;
 
     return APIResponse(res, httpStatus.OK.code, "User created successfully", {
-      user,
+      user: newUser,
     });
   } catch (err: any) {
     return APIResponse(
@@ -35,27 +49,57 @@ export async function signUp(req: Request, res: Response) {
 }
 
 export async function signIn(req: Request, res: Response) {
-  const user = loginUserRequest.parse(req.body);
+  const validatedBody = loginUserRequest.parse(req.body);
 
   try {
     const user = await db
-      .select({ id: users.id })
+      .select({ id: users.id, password: users.password })
       .from(users)
-      .where(eq(users.email, req.body.email))
+      .where(eq(users.email, validatedBody.email))
       .limit(1);
 
     if (user.length === 0) {
-      return APIResponse(res, 404, "User not found");
+      return APIResponse(
+        res,
+        httpStatus.NotFound.code,
+        httpStatus.NotFound.message
+      );
     }
 
-    const jwtToken = signInJWT(user[0].id.toString());
-    res.cookie("authToken", jwtToken);
+    bcrypt.compare(
+      validatedBody.password,
+      user[0].password,
+      function (err, result) {
+        if (err)
+          return APIResponse(
+            res,
+            httpStatus.BadRequest.code,
+            "There was an error during password compare",
+            err
+          );
 
-    return APIResponse(res, 200, "Success", {
-      userId: user[0].id,
-      token: jwtToken,
-    });
+        if (!result)
+          return APIResponse(
+            res,
+            httpStatus.BadRequest.code,
+            "Passwords do not match"
+          );
+
+        const jwtToken = signInJWT(user[0].id.toString());
+        res.cookie("authToken", jwtToken);
+
+        return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+          userId: user[0].id,
+          token: jwtToken,
+        });
+      }
+    );
   } catch (e: any) {
-    return APIResponse(res, 400, "There was an issue during signing in", e);
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      httpStatus.BadRequest.message,
+      e
+    );
   }
 }

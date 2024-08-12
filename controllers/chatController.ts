@@ -263,3 +263,7 @@ export const addUserToChat = asyncWrapper(
     return APIResponse(res, httpStatus.OK.code, "Users added to chat");
   }
 );
+
+export const sendMessage = asyncWrapper(
+  async (req: Request, res: Response) => {}
+);
