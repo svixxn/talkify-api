@@ -5,7 +5,9 @@ import {
   chats,
   insertChatSchema,
   inviteUsersToChatSchema,
+  messages,
   NewChat,
+  sendMessageSchema,
   updateChatSchema,
   userRolesEnum,
 } from "../config/schema";
@@ -264,6 +266,97 @@ export const addUserToChat = asyncWrapper(
   }
 );
 
-export const sendMessage = asyncWrapper(
-  async (req: Request, res: Response) => {}
+export const getAllChatMessages = asyncWrapper(
+  async (req: Request, res: Response) => {
+    const currentUser = res.locals.user;
+    const { chatId } = req.params;
+
+    if (!chatId) {
+      return APIResponse(
+        res,
+        httpStatus.BadRequest.code,
+        "Chat id is required"
+      );
+    }
+
+    const chatIdNumber = parseInt(chatId);
+
+    const chatParticipent = await db
+      .select({ id: chat_participants.id })
+      .from(chat_participants)
+      .where(
+        and(
+          eq(chat_participants.chatId, chatIdNumber),
+          eq(chat_participants.userId, currentUser.id)
+        )
+      );
+
+    if (chatParticipent.length === 0) {
+      return APIResponse(
+        res,
+        httpStatus.Forbidden.code,
+        "User is not belong to this chat"
+      );
+    }
+
+    const chatMessages = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.chatId, chatIdNumber));
+
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+      messages: chatMessages,
+    });
+  }
 );
+
+export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
+  const currentUser = res.locals.user;
+
+  const { chatId } = req.params;
+
+  if (!chatId) {
+    return APIResponse(res, httpStatus.BadRequest.code, "Chat id is required");
+  }
+
+  const sendMessageParseResult = sendMessageSchema.safeParse(req.body);
+
+  if (!sendMessageParseResult.success) {
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "Validation error",
+      sendMessageParseResult.error
+    );
+  }
+
+  const chatIdNumber = parseInt(chatId);
+
+  const chatParticipent = await db
+    .select({ id: chat_participants.id })
+    .from(chat_participants)
+    .where(
+      and(
+        eq(chat_participants.chatId, chatIdNumber),
+        eq(chat_participants.userId, currentUser.id)
+      )
+    );
+
+  if (chatParticipent.length === 0) {
+    return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
+  }
+
+  const newMessage = {
+    ...sendMessageParseResult.data,
+    chatId: chatIdNumber,
+  };
+
+  await db.insert(messages).values(newMessage);
+
+  return APIResponse(
+    res,
+    httpStatus.Created.code,
+    "Message created",
+    newMessage
+  );
+});

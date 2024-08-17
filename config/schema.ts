@@ -107,8 +107,15 @@ export const loginUserRequest = insertUserSchema.pick({
   email: true,
   password: true,
 });
+
 export const inviteUsersToChatSchema = z.object({
   userIds: z.array(z.number()),
+});
+
+export const sendMessageSchema = z.object({
+  senderId: z.number(),
+  content: z.string(),
+  messageType: z.enum(["text", "image", "video", "audio", "file"]),
 });
 
 // Types

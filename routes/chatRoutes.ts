@@ -6,16 +6,20 @@ import {
   createChat,
   updateChat,
   addUserToChat,
+  getAllChatMessages,
+  sendMessage,
 } from "../controllers/chatController";
 
 const router = express.Router();
 
-router.get("/", checkAuth, getAllChats);
+router.use(checkAuth);
 
-router.post("/", checkAuth, createChat);
+router.route("/").get(getAllChats).post(createChat);
 
-router.patch("/:chatId", checkAuth, updateChat);
+router.route("/:chatId/messages").get(getAllChatMessages).post(sendMessage);
 
-router.post("/:chatId/invite", checkAuth, addUserToChat);
+router.patch("/:chatId", updateChat);
+
+router.post("/:chatId/invite", addUserToChat);
 
 export default router;
