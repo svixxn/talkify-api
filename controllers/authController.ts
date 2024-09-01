@@ -16,7 +16,17 @@ import bcrypt from "bcrypt";
 
 export async function signUp(req: Request, res: Response) {
   try {
+    console.log(req.body);
     const user = signUpUserRequest.parse(req.body);
+
+    const existingUser = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, user.email));
+
+    if (existingUser.length > 0) {
+      return APIResponse(res, 400, "User with this email already exists");
+    }
 
     const slug = slugify(req.body.name);
 
@@ -82,15 +92,24 @@ export async function signIn(req: Request, res: Response) {
           return APIResponse(
             res,
             httpStatus.BadRequest.code,
-            "Passwords do not match"
+            "Password is incorrect"
           );
 
-        const jwtToken = signInJWT(user[0].id.toString());
-        res.cookie("authToken", jwtToken);
+        const { token, expiresIn, error } = signInJWT(user[0].id.toString());
+
+        if (error) {
+          return APIResponse(
+            res,
+            httpStatus.BadRequest.code,
+            httpStatus.BadRequest.message,
+            { error }
+          );
+        }
 
         return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
           userId: user[0].id,
-          token: jwtToken,
+          token,
+          expiresIn,
         });
       }
     );
