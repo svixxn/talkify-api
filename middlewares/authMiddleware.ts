@@ -18,8 +18,8 @@ export async function checkAuth(
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.cookies && req.cookies._auth) {
-    token = req.cookies._auth;
+  } else if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
   }
 
   if (!token) {

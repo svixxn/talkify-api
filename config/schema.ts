@@ -52,6 +52,9 @@ export const chats = pgTable("chats", {
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdate(getLocalDate),
   isGroup: boolean("isGroup").default(false),
+  photo: varchar("photo", { length: 256 })
+    .notNull()
+    .default("https://placehold.co/600x600?text=Chat"),
   isDeleted: boolean("isDeleted").default(false),
   name: varchar("name", { length: 256 }).notNull(),
 });

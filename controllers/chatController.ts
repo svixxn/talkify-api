@@ -11,7 +11,7 @@ import {
   updateChatSchema,
   userRolesEnum,
 } from "../config/schema";
-import { and, eq, sql, SQLWrapper } from "drizzle-orm";
+import { and, desc, eq, sql, SQLWrapper } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
@@ -23,13 +23,27 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
     .select({
       chatId: chats.id,
       name: chats.name,
-      isGroup: chats.isGroup,
-      isDeleted: chats.isDeleted,
-      chat_participants: chat_participants,
+      photo: chats.photo,
+      lastMessage: messages.content,
     })
     .from(chats)
-    .where(eq(chat_participants.userId, currentUser.id))
-    .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId));
+    .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId))
+    .leftJoin(
+      messages,
+      and(
+        eq(messages.chatId, chats.id),
+        eq(
+          messages.id,
+          db
+            .select({ id: messages.id })
+            .from(messages)
+            .where(eq(messages.chatId, chats.id))
+            .orderBy(desc(messages.createdAt))
+            .limit(1)
+        )
+      )
+    )
+    .where(eq(chat_participants.userId, currentUser.id));
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     userChats,

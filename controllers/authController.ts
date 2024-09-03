@@ -10,7 +10,7 @@ import {
 import { APIResponse } from "../utils/general";
 import { slugify } from "../utils/general";
 import { httpStatus } from "../utils/constants";
-import { signInJWT } from "../utils/auth";
+import { addTimeToDate, signInJWT } from "../utils/auth";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -72,7 +72,7 @@ export async function signIn(req: Request, res: Response) {
       return APIResponse(
         res,
         httpStatus.NotFound.code,
-        httpStatus.NotFound.message
+        "User with this email does not exist"
       );
     }
 
@@ -96,6 +96,10 @@ export async function signIn(req: Request, res: Response) {
           );
 
         const { token, expiresIn, error } = signInJWT(user[0].id.toString());
+
+        const expiresInDate = addTimeToDate(expiresIn || "");
+
+        res.cookie("authToken", token, { expires: expiresInDate });
 
         if (error) {
           return APIResponse(
