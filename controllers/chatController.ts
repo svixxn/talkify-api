@@ -25,6 +25,7 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
       name: chats.name,
       photo: chats.photo,
       lastMessage: messages.content,
+      lastMessageDate: messages.createdAt,
     })
     .from(chats)
     .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId))
@@ -43,7 +44,8 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
         )
       )
     )
-    .where(eq(chat_participants.userId, currentUser.id));
+    .where(eq(chat_participants.userId, currentUser.id))
+    .orderBy(desc(messages.createdAt));
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     userChats,
@@ -363,6 +365,7 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
   const newMessage = {
     ...sendMessageParseResult.data,
     chatId: chatIdNumber,
+    senderId: currentUser.id,
   };
 
   await db.insert(messages).values(newMessage);
