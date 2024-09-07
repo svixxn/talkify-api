@@ -282,7 +282,7 @@ export const addUserToChat = asyncWrapper(
   }
 );
 
-export const getAllChatMessages = asyncWrapper(
+export const getChatInfoWithMessages = asyncWrapper(
   async (req: Request, res: Response) => {
     const currentUser = res.locals.user;
     const { chatId } = req.params;
@@ -315,13 +315,20 @@ export const getAllChatMessages = asyncWrapper(
       );
     }
 
+    const chatInfo = await db
+      .select({ name: chats.name })
+      .from(chats)
+      .where(eq(chats.id, chatIdNumber));
+
     const chatMessages = await db
       .select()
       .from(messages)
-      .where(eq(messages.chatId, chatIdNumber));
+      .where(eq(messages.chatId, chatIdNumber))
+      .orderBy(desc(messages.createdAt));
 
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-      messages: chatMessages,
+      chatInfo: chatInfo[0],
+      chatMessages,
     });
   }
 );

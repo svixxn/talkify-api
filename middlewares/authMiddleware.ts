@@ -58,7 +58,17 @@ export async function checkAuth(
   }
 
   const user = await db
-    .select()
+    .select({
+      id: users.id,
+      name: users.name,
+      age: users.age,
+      avatar: users.avatar,
+      slug: users.slug,
+      email: users.email,
+      phone: users.phone,
+      bio: users.bio,
+      joinedAt: users.createdAt,
+    })
     .from(users)
     .where(eq(users.id, decoded.id))
     .limit(1);

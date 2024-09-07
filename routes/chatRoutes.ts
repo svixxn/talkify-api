@@ -6,7 +6,7 @@ import {
   createChat,
   updateChat,
   addUserToChat,
-  getAllChatMessages,
+  getChatInfoWithMessages,
   sendMessage,
 } from "../controllers/chatController";
 
@@ -16,7 +16,7 @@ router.use(checkAuth);
 
 router.route("/").get(getAllChats).post(createChat);
 
-router.route("/:chatId/messages").get(getAllChatMessages).post(sendMessage);
+router.route("/:chatId").get(getChatInfoWithMessages).post(sendMessage);
 
 router.patch("/:chatId", updateChat);
 
