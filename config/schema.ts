@@ -37,7 +37,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   age: integer("age").notNull(),
-  avatar: text("avatar"),
+  avatar: text("avatar").default("https://placehold.co/600x600?text=Avatar"),
   slug: varchar("slug", { length: 256 }).notNull(),
   email: varchar("email", { length: 25 }).unique().notNull(),
   password: varchar("password").notNull(),

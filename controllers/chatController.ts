@@ -10,8 +10,9 @@ import {
   sendMessageSchema,
   updateChatSchema,
   userRolesEnum,
+  users,
 } from "../config/schema";
-import { and, desc, eq, sql, SQLWrapper } from "drizzle-orm";
+import { and, asc, desc, eq, sql, SQLWrapper } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
@@ -297,7 +298,7 @@ export const getChatInfoWithMessages = asyncWrapper(
 
     const chatIdNumber = parseInt(chatId);
 
-    const chatParticipent = await db
+    const chatParticipant = await db
       .select({ id: chat_participants.id })
       .from(chat_participants)
       .where(
@@ -307,7 +308,7 @@ export const getChatInfoWithMessages = asyncWrapper(
         )
       );
 
-    if (chatParticipent.length === 0) {
+    if (chatParticipant.length === 0) {
       return APIResponse(
         res,
         httpStatus.Forbidden.code,
@@ -316,15 +317,34 @@ export const getChatInfoWithMessages = asyncWrapper(
     }
 
     const chatInfo = await db
-      .select({ name: chats.name })
+      .select({
+        name: chats.name,
+        participants: sql`ARRAY_AGG(${chat_participants.userId})`.as(
+          "participants"
+        ),
+      })
       .from(chats)
-      .where(eq(chats.id, chatIdNumber));
+      .leftJoin(chat_participants, eq(chat_participants.chatId, chats.id))
+      .where(eq(chats.id, chatIdNumber))
+      .groupBy(chats.id);
+
+    const participantsInfo = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatar: users.avatar,
+      })
+      .from(users)
+      .where(sql`${users.id} in ${chatInfo[0].participants}`);
+
+    chatInfo[0].participants = participantsInfo;
 
     const chatMessages = await db
       .select()
       .from(messages)
       .where(eq(messages.chatId, chatIdNumber))
-      .orderBy(desc(messages.createdAt));
+      .orderBy(asc(messages.createdAt));
 
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
       chatInfo: chatInfo[0],
