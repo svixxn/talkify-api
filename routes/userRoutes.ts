@@ -3,6 +3,7 @@ import {
   getAllUsers,
   getCurrentUser,
   getUserBySlug,
+  getUsersForSearch,
 } from "../controllers/userController";
 
 import { signIn, signUp } from "../controllers/authController";
@@ -17,6 +18,8 @@ router.get("/", getAllUsers);
 router.post("/", signUp);
 
 router.get("/me", checkAuth, getCurrentUser);
+
+router.get("/search", checkAuth, getUsersForSearch);
 
 router.get("/:slug", getUserBySlug);
 
