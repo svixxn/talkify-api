@@ -3,6 +3,7 @@ import {
   getAllUsers,
   getCurrentUser,
   getUserBySlug,
+  getUsersForCreateChat,
   getUsersForSearch,
 } from "../controllers/userController";
 
@@ -20,6 +21,8 @@ router.post("/", signUp);
 router.get("/me", checkAuth, getCurrentUser);
 
 router.get("/search", checkAuth, getUsersForSearch);
+
+router.get("/searchToCreateChat", checkAuth, getUsersForCreateChat);
 
 router.get("/:slug", getUserBySlug);
 

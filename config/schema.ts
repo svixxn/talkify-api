@@ -37,7 +37,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   age: integer("age").notNull(),
-  avatar: text("avatar").default("https://placehold.co/600x600?text=Avatar"),
+  avatar: text("avatar").default("https://placehold.co/600x600?text=User"),
   slug: varchar("slug", { length: 256 }).notNull(),
   email: varchar("email", { length: 25 }).unique().notNull(),
   password: varchar("password").notNull(),
@@ -120,6 +120,11 @@ export const sendMessageSchema = z.object({
   messageType: z.enum(["text", "image", "video", "audio", "file"]),
 });
 
+export const createChatSchema = z.object({
+  name: z.string().optional(),
+  users: z.array(z.number()),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = z.infer<typeof signUpUserRequest>;
@@ -127,4 +132,5 @@ export type Chat = typeof chats.$inferSelect;
 export type NewChat = typeof chats.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type ChatParticipant = typeof chat_participants.$inferSelect;
+export type NewChatParticipant = typeof chat_participants.$inferInsert;
 export type Media = typeof media.$inferSelect;

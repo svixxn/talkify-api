@@ -23,4 +23,10 @@ export const httpStatus = {
     code: 404,
     message: "Row not found",
   },
+  Deleted: {
+    code: 204,
+    message: "Row deleted successfully",
+  },
 };
+
+export const defaultChatPhoto = "https://placehold.co/600x600?text=Chat";

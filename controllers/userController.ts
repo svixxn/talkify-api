@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../config/db";
-import { users } from "../config/schema";
+import { chat_participants, chats, users } from "../config/schema";
 import { APIResponse } from "../utils/general";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { httpStatus } from "../utils/constants";
@@ -61,5 +61,42 @@ export async function getUsersForSearch(req: Request, res: Response) {
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     users: foundUsers,
+  });
+}
+
+export async function getUsersForCreateChat(req: Request, res: Response) {
+  const currentUser = res.locals.user;
+
+  const chatsWithCurrentUser = await db
+    .select({ chatId: chats.id })
+    .from(chat_participants)
+    .leftJoin(chats, eq(chat_participants.chatId, chats.id))
+    .where(
+      and(
+        eq(chats.isGroup, false),
+        eq(chat_participants.userId, currentUser.id)
+      )
+    );
+
+  const chatsWithCurrentUserIds = chatsWithCurrentUser.map(
+    (chat) => chat.chatId
+  );
+
+  const allOtherUsers = await db
+    .select({ id: users.id, avatar: users.avatar, name: users.name })
+    .from(users)
+    .where(
+      sql`${users.id} NOT IN (select ${
+        chat_participants.userId
+      } from ${chat_participants} where ${
+        chat_participants.chatId
+      } IN ${chatsWithCurrentUserIds} and ${ne(
+        chat_participants.userId,
+        currentUser.id
+      )}) and ${ne(users.id, currentUser.id)}`
+    );
+
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+    users: allOtherUsers,
   });
 }

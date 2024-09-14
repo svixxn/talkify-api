@@ -2,11 +2,14 @@ import { Request, Response } from "express";
 import { db } from "../config/db";
 import {
   chat_participants,
+  ChatParticipant,
   chats,
+  createChatSchema,
   insertChatSchema,
   inviteUsersToChatSchema,
   messages,
   NewChat,
+  NewChatParticipant,
   sendMessageSchema,
   updateChatSchema,
   userRolesEnum,
@@ -14,7 +17,7 @@ import {
 } from "../config/schema";
 import { and, asc, desc, eq, sql, SQLWrapper } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
-import { httpStatus } from "../utils/constants";
+import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
 
 export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
@@ -65,7 +68,7 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
   }
 
   try {
-    const newChatSchema = insertChatSchema.safeParse(req.body);
+    const newChatSchema = createChatSchema.safeParse(req.body);
 
     if (!newChatSchema.success) {
       return APIResponse(
@@ -76,23 +79,81 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
       );
     }
 
-    const newChat = newChatSchema.data;
+    const { name, users: usersWhoToAdd } = newChatSchema.data;
 
-    const chat = await db.insert(chats).values(newChat).returning();
+    if (usersWhoToAdd.length == 1) {
+      const userToCreateChatWith = await db
+        .select({ name: users.name, avatar: users.avatar })
+        .from(users)
+        .where(eq(usersWhoToAdd[0] as any, users.id));
 
-    await db.insert(chat_participants).values({
-      chatId: chat[0].id,
-      userId: currentUser.id,
-      role: "admin",
-    });
+      if (userToCreateChatWith.length <= 0)
+        return APIResponse(
+          res,
+          httpStatus.NotFound.code,
+          "User with provided id not found"
+        );
+
+      const chatName = userToCreateChatWith[0].name;
+      const chatPhoto = userToCreateChatWith[0].avatar || defaultChatPhoto;
+
+      const chat = await db
+        .insert(chats)
+        .values({ name: chatName, photo: chatPhoto })
+        .returning();
+
+      const chatParticipants: NewChatParticipant[] = [
+        {
+          chatId: chat[0].id,
+          userId: currentUser.id,
+          role: "admin",
+        },
+        {
+          chatId: chat[0].id,
+          userId: usersWhoToAdd[0],
+          role: "admin",
+        },
+      ];
+
+      await db.insert(chat_participants).values(chatParticipants);
+    } else {
+      if (!name)
+        return APIResponse(
+          res,
+          httpStatus.BadRequest.code,
+          "You should specify a name to create a group chat"
+        );
+
+      const chat = await db
+        .insert(chats)
+        .values({ name, photo: defaultChatPhoto })
+        .returning();
+
+      const chatParticipantsToAdd = usersWhoToAdd.map((userId) => {
+        const newUser: NewChatParticipant = {
+          chatId: chat[0].id,
+          userId: userId,
+          role: "user",
+        };
+
+        return newUser;
+      });
+
+      const currentUserToAdd: NewChatParticipant = {
+        chatId: chat[0].id,
+        userId: currentUser.id,
+        role: "admin",
+      };
+
+      chatParticipantsToAdd.push(currentUserToAdd);
+
+      await db.insert(chat_participants).values(chatParticipantsToAdd);
+    }
 
     return APIResponse(
       res,
       httpStatus.Created.code,
-      httpStatus.Created.message,
-      {
-        chat: chat[0].id,
-      }
+      httpStatus.Created.message
     );
   } catch (err: any) {
     return APIResponse(
@@ -209,6 +270,12 @@ export const deleteChatFull = asyncWrapper(
     }
 
     await db.delete(chats).where(eq(chats.id, chatIdNumber));
+
+    return APIResponse(
+      res,
+      httpStatus.Deleted.code,
+      "Chat deleted successfully"
+    );
   }
 );
 
@@ -319,6 +386,7 @@ export const getChatInfoWithMessages = asyncWrapper(
     const chatInfo = await db
       .select({
         name: chats.name,
+        photo: chats.photo,
         participants: sql`ARRAY_AGG(${chat_participants.userId})`.as(
           "participants"
         ),
