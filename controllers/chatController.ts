@@ -2,10 +2,8 @@ import { Request, Response } from "express";
 import { db } from "../config/db";
 import {
   chat_participants,
-  ChatParticipant,
   chats,
   createChatSchema,
-  insertChatSchema,
   inviteUsersToChatSchema,
   messages,
   NewChat,
@@ -49,7 +47,7 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
       )
     )
     .where(eq(chat_participants.userId, currentUser.id))
-    .orderBy(desc(messages.createdAt));
+    .orderBy(desc(sql`COALESCE(${messages.createdAt}, ${chats.createdAt})`));
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     userChats,
@@ -126,7 +124,7 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
 
       const chat = await db
         .insert(chats)
-        .values({ name, photo: defaultChatPhoto })
+        .values({ name, photo: defaultChatPhoto, isGroup: true })
         .returning();
 
       const chatParticipantsToAdd = usersWhoToAdd.map((userId) => {

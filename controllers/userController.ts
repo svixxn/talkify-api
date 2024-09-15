@@ -82,21 +82,32 @@ export async function getUsersForCreateChat(req: Request, res: Response) {
     (chat) => chat.chatId
   );
 
-  const allOtherUsers = await db
-    .select({ id: users.id, avatar: users.avatar, name: users.name })
-    .from(users)
-    .where(
-      sql`${users.id} NOT IN (select ${
-        chat_participants.userId
-      } from ${chat_participants} where ${
-        chat_participants.chatId
-      } IN ${chatsWithCurrentUserIds} and ${ne(
-        chat_participants.userId,
-        currentUser.id
-      )}) and ${ne(users.id, currentUser.id)}`
-    );
+  if (chatsWithCurrentUserIds.length <= 0) {
+    const allOtherUsers = await db
+      .select({ id: users.id, avatar: users.avatar, name: users.name })
+      .from(users)
+      .where(ne(users.id, currentUser.id));
 
-  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-    users: allOtherUsers,
-  });
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+      users: allOtherUsers,
+    });
+  } else {
+    const allOtherUsers = await db
+      .select({ id: users.id, avatar: users.avatar, name: users.name })
+      .from(users)
+      .where(
+        sql`${users.id} NOT IN (select ${
+          chat_participants.userId
+        } from ${chat_participants} where ${
+          chat_participants.chatId
+        } IN ${chatsWithCurrentUserIds} and ${ne(
+          chat_participants.userId,
+          currentUser.id
+        )}) and ${ne(users.id, currentUser.id)}`
+      );
+
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+      users: allOtherUsers,
+    });
+  }
 }
