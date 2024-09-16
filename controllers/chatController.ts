@@ -20,6 +20,11 @@ import { asyncWrapper } from "../utils/general";
 
 export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;
+  const { s } = req.query;
+
+  const searchValue = (s as string) || "";
+
+  console.log(searchValue);
 
   const userChats = await db
     .select({
@@ -46,7 +51,12 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
         )
       )
     )
-    .where(eq(chat_participants.userId, currentUser.id))
+    .where(
+      and(
+        eq(chat_participants.userId, currentUser.id),
+        sql`lower(${chats.name}) LIKE ${`%${searchValue.toLowerCase()}%`}`
+      )
+    )
     .orderBy(desc(sql`COALESCE(${messages.createdAt}, ${chats.createdAt})`));
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
