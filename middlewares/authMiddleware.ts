@@ -18,8 +18,8 @@ export async function checkAuth(
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.cookies && req.cookies._auth) {
-    token = req.cookies._auth;
+  } else if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
   }
 
   if (!token) {
@@ -58,7 +58,17 @@ export async function checkAuth(
   }
 
   const user = await db
-    .select()
+    .select({
+      id: users.id,
+      name: users.name,
+      age: users.age,
+      avatar: users.avatar,
+      slug: users.slug,
+      email: users.email,
+      phone: users.phone,
+      bio: users.bio,
+      joinedAt: users.createdAt,
+    })
     .from(users)
     .where(eq(users.id, decoded.id))
     .limit(1);

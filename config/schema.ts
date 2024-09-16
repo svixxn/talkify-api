@@ -37,7 +37,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   age: integer("age").notNull(),
-  avatar: text("avatar"),
+  avatar: text("avatar").default("https://placehold.co/600x600?text=User"),
   slug: varchar("slug", { length: 256 }).notNull(),
   email: varchar("email", { length: 25 }).unique().notNull(),
   password: varchar("password").notNull(),
@@ -52,6 +52,9 @@ export const chats = pgTable("chats", {
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdate(getLocalDate),
   isGroup: boolean("isGroup").default(false),
+  photo: varchar("photo", { length: 256 })
+    .notNull()
+    .default("https://placehold.co/600x600?text=Chat"),
   isDeleted: boolean("isDeleted").default(false),
   name: varchar("name", { length: 256 }).notNull(),
 });
@@ -107,8 +110,19 @@ export const loginUserRequest = insertUserSchema.pick({
   email: true,
   password: true,
 });
+
 export const inviteUsersToChatSchema = z.object({
   userIds: z.array(z.number()),
+});
+
+export const sendMessageSchema = z.object({
+  content: z.string(),
+  messageType: z.enum(["text", "image", "video", "audio", "file"]),
+});
+
+export const createChatSchema = z.object({
+  name: z.string().optional(),
+  users: z.array(z.number()),
 });
 
 // Types
@@ -118,4 +132,5 @@ export type Chat = typeof chats.$inferSelect;
 export type NewChat = typeof chats.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type ChatParticipant = typeof chat_participants.$inferSelect;
+export type NewChatParticipant = typeof chat_participants.$inferInsert;
 export type Media = typeof media.$inferSelect;

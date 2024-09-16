@@ -8,6 +8,34 @@
       "when": 1721069474480,
       "tag": "0000_burly_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1725399312594,
+      "tag": "0001_modern_loa",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1725399632421,
+      "tag": "0002_acoustic_agent_zero",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1726000770321,
+      "tag": "0003_melted_network",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1726267601212,
+      "tag": "0004_rapid_stephen_strange",
+      "breakpoints": true
     }
   ]
 }

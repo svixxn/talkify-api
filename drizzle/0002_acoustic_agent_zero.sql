@@ -1,0 +1,1 @@
+ALTER TABLE "chats" ALTER COLUMN "photo" SET DEFAULT 'https://placehold.co/600x600?text=Chat';
