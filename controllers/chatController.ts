@@ -24,8 +24,6 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
 
   const searchValue = (s as string) || "";
 
-  console.log(searchValue);
-
   const userChats = await db
     .select({
       chatId: chats.id,
@@ -358,7 +356,71 @@ export const addUserToChat = asyncWrapper(
   }
 );
 
-export const getChatInfoWithMessages = asyncWrapper(
+export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
+  const currentUser = res.locals.user;
+  const { chatId } = req.params;
+
+  if (!chatId) {
+    return APIResponse(res, httpStatus.BadRequest.code, "Chat id is required");
+  }
+
+  const chatIdNumber = parseInt(chatId);
+
+  const chatParticipant = await db
+    .select({ id: chat_participants.id })
+    .from(chat_participants)
+    .where(
+      and(
+        eq(chat_participants.chatId, chatIdNumber),
+        eq(chat_participants.userId, currentUser.id)
+      )
+    );
+
+  if (chatParticipant.length === 0) {
+    return APIResponse(
+      res,
+      httpStatus.Forbidden.code,
+      "User is not belong to this chat"
+    );
+  }
+
+  const chatInfo = await db
+    .select({
+      name: chats.name,
+      photo: chats.photo,
+      participants: sql`ARRAY_AGG(${chat_participants.userId})`.as(
+        "participants"
+      ),
+    })
+    .from(chats)
+    .leftJoin(chat_participants, eq(chat_participants.chatId, chats.id))
+    .where(eq(chats.id, chatIdNumber))
+    .groupBy(chats.id);
+
+  const participantsInfo = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatar: users.avatar,
+    })
+    .from(users)
+    .where(sql`${users.id} in ${chatInfo[0].participants}`);
+
+  chatInfo[0].participants = participantsInfo;
+
+  const chatMessages = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.chatId, chatIdNumber))
+    .orderBy(asc(messages.createdAt));
+
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+    chatInfo: chatInfo[0],
+  });
+});
+
+export const getChatMessages = asyncWrapper(
   async (req: Request, res: Response) => {
     const currentUser = res.locals.user;
     const { chatId } = req.params;
@@ -391,31 +453,6 @@ export const getChatInfoWithMessages = asyncWrapper(
       );
     }
 
-    const chatInfo = await db
-      .select({
-        name: chats.name,
-        photo: chats.photo,
-        participants: sql`ARRAY_AGG(${chat_participants.userId})`.as(
-          "participants"
-        ),
-      })
-      .from(chats)
-      .leftJoin(chat_participants, eq(chat_participants.chatId, chats.id))
-      .where(eq(chats.id, chatIdNumber))
-      .groupBy(chats.id);
-
-    const participantsInfo = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        avatar: users.avatar,
-      })
-      .from(users)
-      .where(sql`${users.id} in ${chatInfo[0].participants}`);
-
-    chatInfo[0].participants = participantsInfo;
-
     const chatMessages = await db
       .select()
       .from(messages)
@@ -423,8 +460,7 @@ export const getChatInfoWithMessages = asyncWrapper(
       .orderBy(asc(messages.createdAt));
 
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-      chatInfo: chatInfo[0],
-      chatMessages,
+      messages: chatMessages,
     });
   }
 );
@@ -471,12 +507,12 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
     senderId: currentUser.id,
   };
 
-  await db.insert(messages).values(newMessage);
+  const createdMessage = await db
+    .insert(messages)
+    .values(newMessage)
+    .returning();
 
-  return APIResponse(
-    res,
-    httpStatus.Created.code,
-    "Message created",
-    newMessage
-  );
+  return APIResponse(res, httpStatus.Created.code, "Message created", {
+    message: createdMessage[0],
+  });
 });
