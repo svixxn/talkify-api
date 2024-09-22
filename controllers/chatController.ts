@@ -454,8 +454,16 @@ export const getChatMessages = asyncWrapper(
     }
 
     const chatMessages = await db
-      .select()
+      .select({
+        id: messages.id,
+        content: messages.content,
+        messageType: messages.messageType,
+        createdAt: messages.createdAt,
+        senderId: messages.senderId,
+        senderAvatar: users.avatar,
+      })
       .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
       .where(eq(messages.chatId, chatIdNumber))
       .orderBy(asc(messages.createdAt));
 
