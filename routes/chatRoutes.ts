@@ -6,9 +6,10 @@ import {
   createChat,
   updateChat,
   addUserToChat,
-  getChatInfoWithMessages,
+  getChatInfo,
   sendMessage,
   deleteChatFull,
+  getChatMessages,
 } from "../controllers/chatController";
 
 const router = express.Router();
@@ -19,10 +20,11 @@ router.route("/").get(getAllChats).post(createChat);
 
 router
   .route("/:chatId")
-  .get(getChatInfoWithMessages)
-  .post(sendMessage)
+  .get(getChatInfo)
   .patch(updateChat)
   .delete(deleteChatFull);
+
+router.route("/:chatId/messages").get(getChatMessages).post(sendMessage);
 
 router.post("/:chatId/invite", addUserToChat);
 
