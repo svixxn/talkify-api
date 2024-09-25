@@ -30,5 +30,13 @@ io.on("connection", (socket) => {
     io.to(parsedData.chatId).emit("received-message", data);
   });
 
+  socket.on("is-typing", (currentChatId) => {
+    socket.broadcast.to(currentChatId).emit("is-typing");
+  });
+
+  socket.on("stopped-typing", (currentChatId) => {
+    socket.broadcast.to(currentChatId).emit("stopped-typing");
+  });
+
   socket.on("disconnect", () => {});
 });
