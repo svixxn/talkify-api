@@ -409,12 +409,6 @@ export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
 
   chatInfo[0].participants = participantsInfo;
 
-  const chatMessages = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.chatId, chatIdNumber))
-    .orderBy(asc(messages.createdAt));
-
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     chatInfo: chatInfo[0],
   });

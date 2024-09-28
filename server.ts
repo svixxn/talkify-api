@@ -27,7 +27,7 @@ io.on("connection", (socket) => {
 
   socket.on("chat-message", (data) => {
     const parsedData = JSON.parse(data);
-    io.to(parsedData.chatId).emit("received-message", data);
+    socket.broadcast.to(parsedData.chatId).emit("received-message", data);
   });
 
   socket.on("is-typing", (currentChatId) => {
