@@ -13,7 +13,7 @@ import {
   userRolesEnum,
   users,
 } from "../config/schema";
-import { and, asc, desc, eq, sql, SQLWrapper } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql, SQLWrapper } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
@@ -31,6 +31,7 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
       photo: chats.photo,
       lastMessage: messages.content,
       lastMessageDate: messages.createdAt,
+      isGroup: chats.isGroup,
     })
     .from(chats)
     .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId))
@@ -57,8 +58,41 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
     )
     .orderBy(desc(sql`COALESCE(${messages.createdAt}, ${chats.createdAt})`));
 
+  const privateChatIds = userChats
+    .filter((chat) => !chat.isGroup)
+    .map((chat) => chat.chatId);
+
+  const userChatsWithUpdatedNames = await Promise.all(
+    userChats.map(async (chat) => {
+      if (chat.isGroup) return chat;
+
+      const participants = await db
+        .select({
+          chatId: chat_participants.chatId,
+          userId: chat_participants.userId,
+          photo: users.avatar,
+          name: users.name,
+        })
+        .from(chat_participants)
+        .where(inArray(chat_participants.chatId, privateChatIds))
+        .leftJoin(users, eq(chat_participants.userId, users.id));
+
+      const participant = participants.find(
+        (participant) => participant.userId !== currentUser.id
+      );
+
+      if (!participant) return chat;
+
+      return {
+        ...chat,
+        name: participant.name,
+        photo: participant.photo,
+      };
+    })
+  );
+
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-    userChats,
+    userChats: userChatsWithUpdatedNames,
   });
 });
 
@@ -388,29 +422,43 @@ export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
     .select({
       name: chats.name,
       photo: chats.photo,
-      participants: sql`ARRAY_AGG(${chat_participants.userId})`.as(
-        "participants"
-      ),
+      isGroup: chats.isGroup,
     })
     .from(chats)
     .leftJoin(chat_participants, eq(chat_participants.chatId, chats.id))
     .where(eq(chats.id, chatIdNumber))
     .groupBy(chats.id);
 
-  const participantsInfo = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      avatar: users.avatar,
-    })
-    .from(users)
-    .where(sql`${users.id} in ${chatInfo[0].participants}`);
+  const chatWithUpdatedName = await Promise.all(
+    chatInfo.map(async (chat) => {
+      if (chat.isGroup) return chat;
 
-  chatInfo[0].participants = participantsInfo;
+      const participants = await db
+        .select({
+          userId: chat_participants.userId,
+          name: users.name,
+          avatar: users.avatar,
+        })
+        .from(chat_participants)
+        .leftJoin(users, eq(chat_participants.userId, users.id))
+        .where(eq(chat_participants.chatId, chatIdNumber));
+
+      const participant = participants.find(
+        (participant) => participant.userId !== currentUser.id
+      );
+
+      if (!participant) return chat;
+
+      return {
+        ...chat,
+        name: participant.name,
+        photo: participant.avatar,
+      };
+    })
+  );
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-    chatInfo: chatInfo[0],
+    chatInfo: chatWithUpdatedName[0],
   });
 });
 
@@ -489,7 +537,7 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
 
   const chatIdNumber = parseInt(chatId);
 
-  const chatParticipent = await db
+  const chatParticipant = await db
     .select({ id: chat_participants.id })
     .from(chat_participants)
     .where(
@@ -499,7 +547,7 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
       )
     );
 
-  if (chatParticipent.length === 0) {
+  if (chatParticipant.length === 0) {
     return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
   }
 
