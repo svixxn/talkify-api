@@ -21,8 +21,8 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join-chat", (chatId) => {
-    socket.join(chatId);
+  socket.on("join-chats", (chatIds) => {
+    socket.join(chatIds);
   });
 
   socket.on("chat-message", (data) => {
@@ -38,8 +38,8 @@ io.on("connection", (socket) => {
     socket.to(currentChatId).emit("stopped-typing");
   });
 
-  socket.on("leave-chat", (chatId) => {
-    socket.leave(chatId);
+  socket.on("leave-chats", (chatIds) => {
+    socket.leave(chatIds);
   });
 
   socket.on("disconnect", () => {

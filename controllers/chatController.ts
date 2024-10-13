@@ -121,6 +121,8 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
 
     const { name, users: usersWhoToAdd } = newChatSchema.data;
 
+    let createdChatId: number;
+
     if (usersWhoToAdd.length == 1) {
       const userToCreateChatWith = await db
         .select({ name: users.name, avatar: users.avatar })
@@ -154,7 +156,7 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
           role: "admin",
         },
       ];
-
+      createdChatId = chat[0].id;
       await db.insert(chat_participants).values(chatParticipants);
     } else {
       if (!name)
@@ -187,13 +189,15 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
 
       chatParticipantsToAdd.push(currentUserToAdd);
 
+      createdChatId = chat[0].id;
       await db.insert(chat_participants).values(chatParticipantsToAdd);
     }
 
     return APIResponse(
       res,
       httpStatus.Created.code,
-      httpStatus.Created.message
+      httpStatus.Created.message,
+      { chatId: createdChatId }
     );
   } catch (err: any) {
     return APIResponse(
