@@ -38,6 +38,10 @@ io.on("connection", (socket) => {
     socket.to(currentChatId).emit("stopped-typing");
   });
 
+  socket.on("delete-chat", (chatId) => {
+    socket.to(chatId).emit("delete-chat", chatId);
+  });
+
   socket.on("leave-chats", (chatIds) => {
     socket.leave(chatIds);
   });
