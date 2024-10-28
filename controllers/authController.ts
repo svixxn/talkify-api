@@ -16,7 +16,6 @@ import bcrypt from "bcrypt";
 
 export async function signUp(req: Request, res: Response) {
   try {
-    console.log(req.body);
     const user = signUpUserRequest.parse(req.body);
 
     const existingUser = await db
@@ -72,7 +71,7 @@ export async function signIn(req: Request, res: Response) {
       return APIResponse(
         res,
         httpStatus.NotFound.code,
-        "User with this email does not exist"
+        "Email or password is incorrect"
       );
     }
 
@@ -92,7 +91,7 @@ export async function signIn(req: Request, res: Response) {
           return APIResponse(
             res,
             httpStatus.BadRequest.code,
-            "Password is incorrect"
+            "Email or password is incorrect"
           );
 
         const { token, expiresIn, error } = signInJWT(user[0].id.toString());

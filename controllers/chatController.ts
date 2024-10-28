@@ -13,10 +13,11 @@ import {
   userRolesEnum,
   users,
 } from "../config/schema";
-import { and, asc, desc, eq, inArray, sql, SQLWrapper } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql, SQLWrapper } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
+import { sortChatsByLastMessage } from "../utils/chat";
 
 export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;
@@ -55,17 +56,12 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
         eq(chat_participants.userId, currentUser.id),
         sql`lower(${chats.name}) LIKE ${`%${searchValue.toLowerCase()}%`}`
       )
-    )
-    .orderBy(desc(sql`COALESCE(${messages.createdAt}, ${chats.createdAt})`));
+    );
 
-  const privateChatIds = userChats
-    .filter((chat) => !chat.isGroup)
-    .map((chat) => chat.chatId);
+  const privateChats = userChats.filter((chat) => !chat.isGroup);
 
-  const userChatsWithUpdatedNames = await Promise.all(
-    userChats.map(async (chat) => {
-      if (chat.isGroup) return chat;
-
+  const privateChatsWithUpdatedNames = await Promise.all(
+    privateChats.map(async (prChat) => {
       const participants = await db
         .select({
           chatId: chat_participants.chatId,
@@ -74,25 +70,28 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
           name: users.name,
         })
         .from(chat_participants)
-        .where(inArray(chat_participants.chatId, privateChatIds))
+        .where(
+          and(
+            eq(chat_participants.chatId, prChat.chatId),
+            ne(chat_participants.userId, currentUser.id)
+          )
+        )
         .leftJoin(users, eq(chat_participants.userId, users.id));
 
-      const participant = participants.find(
-        (participant) => participant.userId !== currentUser.id
-      );
-
-      if (!participant) return chat;
-
       return {
-        ...chat,
-        name: participant.name,
-        photo: participant.photo,
+        ...prChat,
+        name: participants[0].name,
+        photo: participants[0].photo,
       };
     })
   );
 
+  const groupChats = userChats.filter((chat) => chat.isGroup);
+
+  const finalChats = sortChatsByLastMessage([...groupChats, ...privateChatsWithUpdatedNames])
+
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-    userChats: userChatsWithUpdatedNames,
+    userChats: finalChats,
   });
 });
 
