@@ -17,7 +17,7 @@ import { and, asc, desc, eq, inArray, ne, sql, SQLWrapper } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
-import { sortChatsByLastMessage } from "../utils/chat";
+import { getChatParticipants, sortChatsByLastMessage } from "../utils/chat";
 
 export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;
@@ -88,7 +88,10 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
 
   const groupChats = userChats.filter((chat) => chat.isGroup);
 
-  const finalChats = sortChatsByLastMessage([...groupChats, ...privateChatsWithUpdatedNames])
+  const finalChats = sortChatsByLastMessage([
+    ...groupChats,
+    ...privateChatsWithUpdatedNames,
+  ]);
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     userChats: finalChats,
@@ -426,42 +429,40 @@ export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
       name: chats.name,
       photo: chats.photo,
       isGroup: chats.isGroup,
+      description: chats.description,
     })
     .from(chats)
-    .leftJoin(chat_participants, eq(chat_participants.chatId, chats.id))
     .where(eq(chats.id, chatIdNumber))
     .groupBy(chats.id);
 
-  const chatWithUpdatedName = await Promise.all(
-    chatInfo.map(async (chat) => {
-      if (chat.isGroup) return chat;
+  if (!chatInfo[0].isGroup) {
+    const participants = await db
+      .select({
+        userId: chat_participants.userId,
+        name: users.name,
+        avatar: users.avatar,
+        description: users.bio,
+      })
+      .from(chat_participants)
+      .leftJoin(users, eq(chat_participants.userId, users.id))
+      .where(eq(chat_participants.chatId, chatIdNumber));
 
-      const participants = await db
-        .select({
-          userId: chat_participants.userId,
-          name: users.name,
-          avatar: users.avatar,
-        })
-        .from(chat_participants)
-        .leftJoin(users, eq(chat_participants.userId, users.id))
-        .where(eq(chat_participants.chatId, chatIdNumber));
+    const participant = participants.find(
+      (participant) => participant.userId !== currentUser.id
+    );
 
-      const participant = participants.find(
-        (participant) => participant.userId !== currentUser.id
-      );
+    if (participant && participant.name && participant.avatar) {
+      chatInfo[0].name = participant.name;
+      chatInfo[0].photo = participant.avatar;
+      chatInfo[0].description = participant.description;
+    }
+  }
 
-      if (!participant) return chat;
-
-      return {
-        ...chat,
-        name: participant.name,
-        photo: participant.avatar,
-      };
-    })
-  );
+  const chatParticipants = await getChatParticipants(chatIdNumber);
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-    chatInfo: chatWithUpdatedName[0],
+    chatInfo: chatInfo[0],
+    participants: chatParticipants,
   });
 });
 

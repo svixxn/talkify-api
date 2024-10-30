@@ -57,6 +57,7 @@ export const chats = pgTable("chats", {
     .default("https://placehold.co/600x600?text=Chat"),
   isDeleted: boolean("isDeleted").default(false),
   name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
 });
 
 export const messages = pgTable("messages", {
