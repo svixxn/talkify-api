@@ -265,12 +265,9 @@ export const updateChat = asyncWrapper(async (req: Request, res: Response) => {
     .where(eq(chats.id, chatIdNumber))
     .returning();
 
-  return APIResponse(
-    res,
-    httpStatus.OK.code,
-    httpStatus.OK.message,
-    updatedChat
-  );
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+    updatedChat: updatedChat[0],
+  });
 });
 
 export const deleteChatFull = asyncWrapper(
