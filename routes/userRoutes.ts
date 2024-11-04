@@ -2,7 +2,7 @@ import express from "express";
 import {
   getAllUsers,
   getCurrentUser,
-  getUserBySlug,
+  getUserById,
   getUsersForCreateChat,
   getUsersForSearch,
 } from "../controllers/userController";
@@ -12,18 +12,16 @@ import { checkAuth } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-router.post("/sign-in", signIn);
-
-router.get("/", getAllUsers);
-
-router.post("/", signUp);
+router.route("/").get(checkAuth, getAllUsers).post(signUp);
 
 router.get("/me", checkAuth, getCurrentUser);
+
+router.route("/:id").get(checkAuth, getUserById);
 
 router.get("/search", checkAuth, getUsersForSearch);
 
 router.get("/searchToCreateChat", checkAuth, getUsersForCreateChat);
 
-router.get("/:slug", getUserBySlug);
+router.post("/sign-in", signIn);
 
 export default router;

@@ -38,14 +38,20 @@ export async function signUp(req: Request, res: Response) {
             "There was a problem during hashing your password"
           );
 
-        await db.insert(users).values({ ...user, slug, password: hash });
+        const newUser = await db
+          .insert(users)
+          .values({ ...user, slug, password: hash })
+          .returning({ id: users.id });
+
+        return APIResponse(
+          res,
+          httpStatus.OK.code,
+          "User created successfully",
+          {
+            userId: newUser[0].id,
+          }
+        );
       });
-    });
-
-    const { password, ...newUser } = user;
-
-    return APIResponse(res, httpStatus.OK.code, "User created successfully", {
-      user: newUser,
     });
   } catch (err: any) {
     return APIResponse(

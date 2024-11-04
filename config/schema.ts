@@ -43,6 +43,9 @@ export const users = pgTable("users", {
   password: varchar("password").notNull(),
   phone: varchar("phone", { length: 25 }),
   bio: text("bio"),
+  github: varchar("github", { length: 256 }),
+  twitter: varchar("twitter", { length: 256 }),
+  website: varchar("website", { length: 256 }),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdate(getLocalDate),
 });

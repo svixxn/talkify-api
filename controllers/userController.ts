@@ -13,20 +13,40 @@ export async function getAllUsers(req: Request, res: Response) {
   });
 }
 
-export async function getUserBySlug(req: Request, res: Response) {
-  const { slug } = req.params;
+export async function getUserById(req: Request, res: Response) {
+  const { id } = req.params;
 
-  const user = await db.select().from(users).where(eq(users.slug, slug));
+  if (!id) {
+    return APIResponse(res, httpStatus.BadRequest.code, "User id is required");
+  }
+
+  const user = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatar: users.avatar,
+      slug: users.slug,
+      age: users.age,
+      bio: users.bio,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      phone: users.phone,
+    })
+    .from(users)
+    .where(eq(users.id, Number(id)));
 
   if (user.length <= 0) {
     return APIResponse(
       res,
       httpStatus.NotFound.code,
-      "There is no user with provided slug"
+      "There is no user with provided id"
     );
   }
 
-  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, { user });
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+    user: user[0],
+  });
 }
 
 export async function getCurrentUser(req: Request, res: Response) {

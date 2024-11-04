@@ -558,12 +558,6 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
     senderId: currentUser.id,
   };
 
-  const createdMessage = await db
-    .insert(messages)
-    .values(newMessage)
-    .returning();
-
-  return APIResponse(res, httpStatus.Created.code, "Message created", {
-    message: createdMessage[0],
-  });
+  await db.insert(messages).values(newMessage);
+  return APIResponse(res, httpStatus.Created.code, "Message created");
 });
