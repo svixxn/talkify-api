@@ -75,6 +75,8 @@ export const messages = pgTable("messages", {
     .references(() => chats.id, { onDelete: "cascade" }),
   content: text("content"),
   messageType: messageTypeEnum("messageType").notNull(),
+  isDeletedForAll: boolean("isDeletedForAll").default(false),
+  isDeletedForSender: boolean("isDeletedForSender").default(false),
 });
 
 export const chat_participants = pgTable("chat_participants", {
@@ -127,6 +129,11 @@ export const sendMessageSchema = z.object({
 export const createChatSchema = z.object({
   name: z.string().optional(),
   users: z.array(z.number()),
+});
+
+export const deleteChatHistorySchema = z.object({
+  chatId: z.number(),
+  deleteForAll: z.boolean(),
 });
 
 // Types
