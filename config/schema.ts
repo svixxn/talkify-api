@@ -132,7 +132,6 @@ export const createChatSchema = z.object({
 });
 
 export const deleteChatHistorySchema = z.object({
-  chatId: z.number(),
   deleteForAll: z.boolean(),
 });
 

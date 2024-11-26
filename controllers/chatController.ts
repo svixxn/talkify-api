@@ -574,6 +574,16 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
 export const deleteChatHistory = asyncWrapper(
   async (req: Request, res: Response) => {
     const currentUser = res.locals.user;
+    let { chatId } = req.params;
+
+    if (!chatId) {
+      return APIResponse(
+        res,
+        httpStatus.BadRequest.code,
+        "Chat id is required"
+      );
+    }
+
     const body = deleteChatHistorySchema.safeParse(req.body);
 
     if (!body.success) {
@@ -585,14 +595,14 @@ export const deleteChatHistory = asyncWrapper(
       );
     }
 
-    const { chatId, deleteForAll } = body.data;
+    const { deleteForAll } = body.data;
 
     const chatParticipant = await db
       .select({ id: chat_participants.id })
       .from(chat_participants)
       .where(
         and(
-          eq(chat_participants.chatId, chatId),
+          eq(chat_participants.chatId, Number(chatId)),
           eq(chat_participants.userId, currentUser.id)
         )
       );
@@ -602,14 +612,14 @@ export const deleteChatHistory = asyncWrapper(
     }
 
     if (deleteForAll)
-      await db.delete(messages).where(eq(messages.chatId, chatId));
+      await db.delete(messages).where(eq(messages.chatId, Number(chatId)));
     else
       await db
         .update(messages)
         .set({ isDeletedForSender: true })
         .where(
           and(
-            eq(messages.chatId, chatId),
+            eq(messages.chatId, Number(chatId)),
             eq(messages.senderId, currentUser.id)
           )
         );
