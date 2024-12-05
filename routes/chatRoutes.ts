@@ -11,6 +11,7 @@ import {
   deleteChatFull,
   getChatMessages,
   deleteChatHistory,
+  deleteChatMessage,
 } from "../controllers/chatController";
 
 const router = express.Router();
@@ -25,10 +26,14 @@ router
   .patch(updateChat)
   .delete(deleteChatFull);
 
-router.route("/:chatId/messages").get(getChatMessages).post(sendMessage);
+router
+  .route("/:chatId/messages")
+  .get(getChatMessages)
+  .post(sendMessage)
+  .delete(deleteChatHistory);
+
+router.route("/:chatId/messages/:messageId").delete(deleteChatMessage);
 
 router.post("/:chatId/invite", addUserToChat);
-
-router.post("/:chatId/clearHistory", deleteChatHistory);
 
 export default router;

@@ -497,13 +497,7 @@ export const getChatMessages = asyncWrapper(
       );
     }
 
-    const filters: SQLWrapper[] = [
-      eq(messages.chatId, chatIdNumber),
-      eq(messages.isDeletedForAll, false),
-    ];
-
-    if (messages.senderId === currentUser.id)
-      filters.push(eq(messages.isDeletedForSender, false));
+    const filters: SQLWrapper[] = [eq(messages.chatId, chatIdNumber)];
 
     const chatMessages = await db
       .select({
@@ -584,18 +578,38 @@ export const deleteChatHistory = asyncWrapper(
       );
     }
 
-    const body = deleteChatHistorySchema.safeParse(req.body);
+    const chatParticipant = await db
+      .select({ id: chat_participants.id })
+      .from(chat_participants)
+      .where(
+        and(
+          eq(chat_participants.chatId, Number(chatId)),
+          eq(chat_participants.userId, currentUser.id)
+        )
+      );
 
-    if (!body.success) {
+    if (chatParticipant.length === 0) {
+      return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
+    }
+
+    await db.delete(messages).where(eq(messages.chatId, Number(chatId)));
+
+    return APIResponse(res, httpStatus.Deleted.code, "Chat history deleted");
+  }
+);
+
+export const deleteChatMessage = asyncWrapper(
+  async (req: Request, res: Response) => {
+    const currentUser = res.locals.user;
+    let { chatId, messageId } = req.params;
+
+    if (!chatId || messageId) {
       return APIResponse(
         res,
         httpStatus.BadRequest.code,
-        "Validation error",
-        body.error
+        "chat id and message id is required"
       );
     }
-
-    const { deleteForAll } = body.data;
 
     const chatParticipant = await db
       .select({ id: chat_participants.id })
@@ -611,19 +625,15 @@ export const deleteChatHistory = asyncWrapper(
       return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
     }
 
-    if (deleteForAll)
-      await db.delete(messages).where(eq(messages.chatId, Number(chatId)));
-    else
-      await db
-        .update(messages)
-        .set({ isDeletedForSender: true })
-        .where(
-          and(
-            eq(messages.chatId, Number(chatId)),
-            eq(messages.senderId, currentUser.id)
-          )
-        );
+    await db
+      .delete(messages)
+      .where(
+        and(
+          eq(messages.chatId, Number(chatId)),
+          eq(messages.id, Number(messageId))
+        )
+      );
 
-    return APIResponse(res, httpStatus.Deleted.code, "Chat history deleted");
+    return APIResponse(res, httpStatus.Deleted.code, "Chat message deleted");
   }
 );

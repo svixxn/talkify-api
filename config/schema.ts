@@ -75,8 +75,6 @@ export const messages = pgTable("messages", {
     .references(() => chats.id, { onDelete: "cascade" }),
   content: text("content"),
   messageType: messageTypeEnum("messageType").notNull(),
-  isDeletedForAll: boolean("isDeletedForAll").default(false),
-  isDeletedForSender: boolean("isDeletedForSender").default(false),
 });
 
 export const chat_participants = pgTable("chat_participants", {
