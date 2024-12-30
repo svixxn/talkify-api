@@ -497,8 +497,6 @@ export const getChatMessages = asyncWrapper(
       );
     }
 
-    const filters: SQLWrapper[] = [eq(messages.chatId, chatIdNumber)];
-
     const chatMessages = await db
       .select({
         id: messages.id,
@@ -510,7 +508,7 @@ export const getChatMessages = asyncWrapper(
       })
       .from(messages)
       .leftJoin(users, eq(messages.senderId, users.id))
-      .where(and(...filters))
+      .where(eq(messages.chatId, chatIdNumber))
       .orderBy(asc(messages.createdAt));
 
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
@@ -602,12 +600,13 @@ export const deleteChatMessage = asyncWrapper(
   async (req: Request, res: Response) => {
     const currentUser = res.locals.user;
     let { chatId, messageId } = req.params;
+    console.log(chatId, messageId);
 
-    if (!chatId || messageId) {
+    if (!chatId || !messageId) {
       return APIResponse(
         res,
         httpStatus.BadRequest.code,
-        "chat id and message id is required"
+        "Chat id and message id is required"
       );
     }
 
