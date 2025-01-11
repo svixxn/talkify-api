@@ -120,6 +120,7 @@ export const inviteUsersToChatSchema = z.object({
 });
 
 export const sendMessageSchema = z.object({
+  id: z.number(),
   content: z.string(),
   messageType: z.enum(["text", "image", "video", "audio", "file"]),
 });

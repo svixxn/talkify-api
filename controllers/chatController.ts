@@ -600,7 +600,6 @@ export const deleteChatMessage = asyncWrapper(
   async (req: Request, res: Response) => {
     const currentUser = res.locals.user;
     let { chatId, messageId } = req.params;
-    console.log(chatId, messageId);
 
     if (!chatId || !messageId) {
       return APIResponse(

@@ -30,6 +30,11 @@ io.on("connection", (socket) => {
     socket.to(parsedData.chatId).emit("received-message", data);
   });
 
+  socket.on("delete-message", (data) => {
+    const parsedData = JSON.parse(data);
+    socket.to(parsedData.chatId).emit("delete-message", data);
+  });
+
   socket.on("is-typing", (currentChatId) => {
     socket.to(currentChatId).emit("is-typing");
   });
