@@ -505,14 +505,36 @@ export const getChatMessages = asyncWrapper(
         createdAt: messages.createdAt,
         senderId: messages.senderId,
         senderAvatar: users.avatar,
+        senderName: users.name,
+        parentId: messages.parentId,
       })
       .from(messages)
       .leftJoin(users, eq(messages.senderId, users.id))
       .where(eq(messages.chatId, chatIdNumber))
       .orderBy(asc(messages.createdAt));
 
+    const messagesWithReplies = chatMessages.map((message) => {
+      if (message.parentId) {
+        const parentMessage = chatMessages.find(
+          (msg) => msg.id === message.parentId
+        );
+        if (!parentMessage) return message;
+
+        return {
+          ...message,
+          parentMessage: {
+            id: parentMessage.id,
+            content: parentMessage.content,
+            sender: parentMessage.senderName,
+          },
+        };
+      }
+
+      return message;
+    });
+
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-      messages: chatMessages,
+      messages: messagesWithReplies,
     });
   }
 );

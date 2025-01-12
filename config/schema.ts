@@ -75,6 +75,7 @@ export const messages = pgTable("messages", {
     .references(() => chats.id, { onDelete: "cascade" }),
   content: text("content"),
   messageType: messageTypeEnum("messageType").notNull(),
+  parentId: integer("parentId"),
 });
 
 export const chat_participants = pgTable("chat_participants", {
@@ -123,6 +124,7 @@ export const sendMessageSchema = z.object({
   id: z.number(),
   content: z.string(),
   messageType: z.enum(["text", "image", "video", "audio", "file"]),
+  parentId: z.number().nullable(),
 });
 
 export const createChatSchema = z.object({
