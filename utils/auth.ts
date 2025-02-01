@@ -5,13 +5,8 @@ export function signInJWT(id: string): {
   expiresIn?: string;
   error?: string;
 } {
-  if (!process.env.JWT_SECRET)
-    return {
-      error: "No JWT secret specified",
-    };
-
-  const JWT_SECRET: Secret = process.env.JWT_SECRET;
-  const expiresIn = process.env.JWT_EXPIRES_AT || "24h";
+  const JWT_SECRET: Secret = process.env.JWT_SECRET ?? "secret";
+  const expiresIn = process.env.JWT_EXPIRES_AT ?? "24h";
 
   console.log("JWT_SECRET", JWT_SECRET, expiresIn, id);
 
