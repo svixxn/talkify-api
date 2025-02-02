@@ -74,6 +74,8 @@ export const messages = pgTable("messages", {
     .notNull()
     .references(() => chats.id, { onDelete: "cascade" }),
   content: text("content"),
+  media: text("media"),
+  file: text("file"),
   messageType: messageTypeEnum("messageType").notNull(),
   parentId: integer("parentId"),
 });
@@ -88,17 +90,6 @@ export const chat_participants = pgTable("chat_participants", {
     .references(() => users.id, { onDelete: "cascade" }),
   joinedAt: timestamp("joinedAt").defaultNow(),
   role: userRolesEnum("user_role").default("user"),
-});
-
-export const media = pgTable("media", {
-  id: serial("id").primaryKey(),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow().$onUpdate(getLocalDate),
-  messageId: integer("messageid").references(() => messages.id, {
-    onDelete: "cascade",
-  }),
-  url: text("url").notNull(),
-  type: varchar("type", { length: 256 }).notNull(),
 });
 
 //Zod schemas
@@ -144,4 +135,3 @@ export type NewChat = typeof chats.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type ChatParticipant = typeof chat_participants.$inferSelect;
 export type NewChatParticipant = typeof chat_participants.$inferInsert;
-export type Media = typeof media.$inferSelect;
