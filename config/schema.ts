@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   integer,
   pgEnum,
@@ -75,7 +76,9 @@ export const messages = pgTable("messages", {
     .references(() => chats.id, { onDelete: "cascade" }),
   content: text("content"),
   media: text("media"),
-  file: text("file"),
+  files: text("files")
+    .array()
+    .default(sql`'{}'::text[]`),
   messageType: messageTypeEnum("messageType").notNull(),
   parentId: integer("parentId"),
 });
@@ -116,6 +119,7 @@ export const sendMessageSchema = z.object({
   content: z.string(),
   messageType: z.enum(["text", "image", "video", "audio", "file"]),
   parentId: z.number().nullable(),
+  files: z.array(z.string()),
 });
 
 export const createChatSchema = z.object({
