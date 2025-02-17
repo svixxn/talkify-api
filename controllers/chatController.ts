@@ -19,6 +19,7 @@ import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
 import { getChatParticipants, sortChatsByLastMessage } from "../utils/chat";
+import { deleteMany } from "../utils/cloudinary";
 
 export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;
@@ -645,6 +646,21 @@ export const deleteChatMessage = asyncWrapper(
     if (chatParticipant.length === 0) {
       return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
     }
+
+    const message = await db
+      .select({ id: messages.id, files: messages.files })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.chatId, Number(chatId)),
+          eq(messages.id, Number(messageId))
+        )
+      );
+
+    await deleteMany({
+      folder: "talkify/media",
+      public_ids: message[0].files,
+    });
 
     await db
       .delete(messages)
