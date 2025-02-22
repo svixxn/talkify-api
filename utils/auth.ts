@@ -13,7 +13,7 @@ export function signInJWT(id: string): {
         : Number(process.env.JWT_EXPIRES_AT)
       : "24h";
 
-    const token = jwt.sign({ id }, JWT_SECRET as jwt.Secret, { expiresIn });
+    const token = jwt.sign({ id }, "test12345", { expiresIn });
 
     return { token, expiresIn: expiresIn.toString() };
   } catch (error) {
