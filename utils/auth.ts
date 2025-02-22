@@ -14,7 +14,7 @@ export function signInJWT(id: string): {
       : "24h";
 
     const token = jwt.sign(
-      { id, exp: Math.floor(Date.now() / 1000) + 60 * 60 },
+      { id, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 },
       JWT_SECRET
     );
 
