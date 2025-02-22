@@ -1,21 +1,24 @@
-import jwt, { Secret } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 export function signInJWT(id: string): {
   token?: string;
   expiresIn?: string;
   error?: string;
 } {
-  const JWT_SECRET: string = process.env.JWT_SECRET ?? "secret";
-  const expiresIn: string = process.env.JWT_EXPIRES_AT ?? "24h";
+  try {
+    const JWT_SECRET = process.env.JWT_SECRET ?? "secret";
+    const expiresIn: string | number = process.env.JWT_EXPIRES_AT
+      ? isNaN(Number(process.env.JWT_EXPIRES_AT))
+        ? process.env.JWT_EXPIRES_AT
+        : Number(process.env.JWT_EXPIRES_AT)
+      : "24h";
 
-  const token = jwt.sign({ id }, JWT_SECRET, {
-    expiresIn,
-  });
+    const token = jwt.sign({ id }, JWT_SECRET as jwt.Secret, { expiresIn });
 
-  return {
-    token,
-    expiresIn,
-  };
+    return { token, expiresIn: expiresIn.toString() };
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
 }
 
 export function addTimeToDate(timeString: string) {

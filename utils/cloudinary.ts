@@ -23,7 +23,7 @@ export const deleteMany = async ({
   folder: string;
   public_ids: string[] | null;
 }) => {
-  if (!public_ids) return;
+  if (!public_ids || public_ids.length === 0) return;
 
   const extractedPublicIds = public_ids.map((public_id) => {
     const splittedPublicIds = public_id.split("/");
