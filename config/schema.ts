@@ -144,3 +144,5 @@ export type NewChat = typeof chats.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type ChatParticipant = typeof chat_participants.$inferSelect;
 export type NewChatParticipant = typeof chat_participants.$inferInsert;
+
+export type UserRole = (typeof userRolesEnum.enumValues)[number];

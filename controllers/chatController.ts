@@ -4,17 +4,14 @@ import {
   chat_participants,
   chats,
   createChatSchema,
-  deleteChatHistorySchema,
   inviteUsersToChatSchema,
   messages,
-  NewChat,
   NewChatParticipant,
   sendMessageSchema,
   updateChatSchema,
-  userRolesEnum,
   users,
 } from "../config/schema";
-import { and, asc, desc, eq, inArray, ne, sql, SQLWrapper } from "drizzle-orm";
+import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
@@ -102,14 +99,6 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
 
 export const createChat = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;
-
-  if (!currentUser) {
-    return APIResponse(
-      res,
-      httpStatus.Unauthorized.code,
-      httpStatus.Unauthorized.message
-    );
-  }
 
   try {
     const newChatSchema = createChatSchema.safeParse(req.body);
@@ -214,12 +203,7 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
 });
 
 export const updateChat = asyncWrapper(async (req: Request, res: Response) => {
-  const currentUser = res.locals.user;
   const { chatId } = req.params;
-
-  if (!chatId) {
-    return APIResponse(res, httpStatus.BadRequest.code, "Chat id is required");
-  }
 
   const updateSchema = updateChatSchema.safeParse(req.body);
 
@@ -234,33 +218,6 @@ export const updateChat = asyncWrapper(async (req: Request, res: Response) => {
 
   const chatIdNumber = parseInt(chatId);
 
-  const result = await db
-    .select()
-    .from(chats)
-    .where(
-      and(
-        eq(chats.id, chatIdNumber),
-        eq(chat_participants.userId, currentUser.id)
-      )
-    )
-    .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId));
-
-  if (result.length === 0) {
-    return APIResponse(
-      res,
-      httpStatus.NotFound.code,
-      httpStatus.NotFound.message
-    );
-  }
-
-  if (result[0].chat_participants?.role !== "admin") {
-    return APIResponse(
-      res,
-      httpStatus.Forbidden.code,
-      httpStatus.Forbidden.message
-    );
-  }
-
   const updatedChat = await db
     .update(chats)
     .set(updateSchema.data)
@@ -274,45 +231,9 @@ export const updateChat = asyncWrapper(async (req: Request, res: Response) => {
 
 export const deleteChatFull = asyncWrapper(
   async (req: Request, res: Response) => {
-    const currentUser = res.locals.user;
     const { chatId } = req.params;
 
-    if (!chatId) {
-      return APIResponse(
-        res,
-        httpStatus.BadRequest.code,
-        "Chat id is required"
-      );
-    }
-
     const chatIdNumber = parseInt(chatId);
-
-    const result = await db
-      .select()
-      .from(chats)
-      .where(
-        and(
-          eq(chats.id, chatIdNumber),
-          eq(chat_participants.userId, currentUser.id)
-        )
-      )
-      .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId));
-
-    if (result.length === 0) {
-      return APIResponse(
-        res,
-        httpStatus.NotFound.code,
-        httpStatus.NotFound.message
-      );
-    }
-
-    if (result[0].chat_participants?.role !== "admin") {
-      return APIResponse(
-        res,
-        httpStatus.Forbidden.code,
-        httpStatus.Forbidden.message
-      );
-    }
 
     await db.delete(chats).where(eq(chats.id, chatIdNumber));
 
@@ -329,14 +250,6 @@ export const addUserToChat = asyncWrapper(
     const currentUser = res.locals.user;
     const { chatId } = req.params;
 
-    if (!chatId) {
-      return APIResponse(
-        res,
-        httpStatus.BadRequest.code,
-        "Chat id is required"
-      );
-    }
-
     const inviteUsersSchema = inviteUsersToChatSchema.safeParse(req.body);
 
     if (!inviteUsersSchema.success) {
@@ -349,36 +262,6 @@ export const addUserToChat = asyncWrapper(
     }
 
     const chatIdNumber = parseInt(chatId);
-
-    const result = await db
-      .select()
-      .from(chats)
-      .where(
-        and(
-          eq(chats.id, chatIdNumber),
-          eq(chat_participants.userId, currentUser.id)
-        )
-      )
-      .leftJoin(chat_participants, eq(chats.id, chat_participants.chatId));
-
-    if (result.length === 0) {
-      return APIResponse(
-        res,
-        httpStatus.NotFound.code,
-        httpStatus.NotFound.message
-      );
-    }
-
-    if (
-      result[0].chat_participants?.role !== "admin" &&
-      result[0].chat_participants?.role !== "moderator"
-    ) {
-      return APIResponse(
-        res,
-        httpStatus.Forbidden.code,
-        httpStatus.Forbidden.message
-      );
-    }
 
     const users = inviteUsersSchema.data.users;
 
@@ -399,29 +282,7 @@ export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;
   const { chatId } = req.params;
 
-  if (!chatId) {
-    return APIResponse(res, httpStatus.BadRequest.code, "Chat id is required");
-  }
-
   const chatIdNumber = parseInt(chatId);
-
-  const chatParticipant = await db
-    .select({ id: chat_participants.id })
-    .from(chat_participants)
-    .where(
-      and(
-        eq(chat_participants.chatId, chatIdNumber),
-        eq(chat_participants.userId, currentUser.id)
-      )
-    );
-
-  if (chatParticipant.length === 0) {
-    return APIResponse(
-      res,
-      httpStatus.Forbidden.code,
-      "User is not belong to this chat"
-    );
-  }
 
   const chatInfo = await db
     .select({
@@ -469,14 +330,6 @@ export const getChatMessages = asyncWrapper(
   async (req: Request, res: Response) => {
     const currentUser = res.locals.user;
     const { chatId } = req.params;
-
-    if (!chatId) {
-      return APIResponse(
-        res,
-        httpStatus.BadRequest.code,
-        "Chat id is required"
-      );
-    }
 
     const chatIdNumber = parseInt(chatId);
 
@@ -546,10 +399,6 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
 
   const { chatId } = req.params;
 
-  if (!chatId) {
-    return APIResponse(res, httpStatus.BadRequest.code, "Chat id is required");
-  }
-
   const sendMessageParseResult = sendMessageSchema.safeParse(req.body);
 
   if (!sendMessageParseResult.success) {
@@ -563,20 +412,6 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
 
   const chatIdNumber = parseInt(chatId);
 
-  const chatParticipant = await db
-    .select({ id: chat_participants.id })
-    .from(chat_participants)
-    .where(
-      and(
-        eq(chat_participants.chatId, chatIdNumber),
-        eq(chat_participants.userId, currentUser.id)
-      )
-    );
-
-  if (chatParticipant.length === 0) {
-    return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
-  }
-
   const newMessage = {
     ...sendMessageParseResult.data,
     chatId: chatIdNumber,
@@ -589,30 +424,7 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
 
 export const deleteChatHistory = asyncWrapper(
   async (req: Request, res: Response) => {
-    const currentUser = res.locals.user;
     let { chatId } = req.params;
-
-    if (!chatId) {
-      return APIResponse(
-        res,
-        httpStatus.BadRequest.code,
-        "Chat id is required"
-      );
-    }
-
-    const chatParticipant = await db
-      .select({ id: chat_participants.id })
-      .from(chat_participants)
-      .where(
-        and(
-          eq(chat_participants.chatId, Number(chatId)),
-          eq(chat_participants.userId, currentUser.id)
-        )
-      );
-
-    if (chatParticipant.length === 0) {
-      return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
-    }
 
     await db.delete(messages).where(eq(messages.chatId, Number(chatId)));
 
@@ -622,29 +434,14 @@ export const deleteChatHistory = asyncWrapper(
 
 export const deleteChatMessage = asyncWrapper(
   async (req: Request, res: Response) => {
-    const currentUser = res.locals.user;
     let { chatId, messageId } = req.params;
 
-    if (!chatId || !messageId) {
+    if (!messageId) {
       return APIResponse(
         res,
         httpStatus.BadRequest.code,
-        "Chat id and message id is required"
+        "Message id is required"
       );
-    }
-
-    const chatParticipant = await db
-      .select({ id: chat_participants.id })
-      .from(chat_participants)
-      .where(
-        and(
-          eq(chat_participants.chatId, Number(chatId)),
-          eq(chat_participants.userId, currentUser.id)
-        )
-      );
-
-    if (chatParticipant.length === 0) {
-      return APIResponse(res, httpStatus.NotFound.code, "Chat not found");
     }
 
     const message = await db

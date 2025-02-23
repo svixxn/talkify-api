@@ -14,6 +14,8 @@ import {
   deleteChatMessage,
 } from "../controllers/chatController";
 
+import { checkAvailability } from "../middlewares/roleMiddleware";
+
 const router = express.Router();
 
 router.use(checkAuth);
@@ -22,18 +24,24 @@ router.route("/").get(getAllChats).post(createChat);
 
 router
   .route("/:chatId")
-  .get(getChatInfo)
-  .patch(updateChat)
-  .delete(deleteChatFull);
+  .get(checkAvailability(), getChatInfo)
+  .patch(checkAvailability(["admin", "moderator"]), updateChat)
+  .delete(checkAvailability(["admin"]), deleteChatFull);
 
 router
   .route("/:chatId/messages")
-  .get(getChatMessages)
-  .post(sendMessage)
-  .delete(deleteChatHistory);
+  .get(checkAvailability(), getChatMessages)
+  .post(checkAvailability(), sendMessage)
+  .delete(checkAvailability(["admin"]), deleteChatHistory);
 
-router.route("/:chatId/messages/:messageId").delete(deleteChatMessage);
+router
+  .route("/:chatId/messages/:messageId")
+  .delete(checkAvailability(), deleteChatMessage);
 
-router.post("/:chatId/invite", addUserToChat);
+router.post(
+  "/:chatId/invite",
+  checkAvailability(["admin", "moderator"]),
+  addUserToChat
+);
 
 export default router;
