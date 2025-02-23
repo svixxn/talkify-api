@@ -18,7 +18,7 @@ router.get("/me", checkAuth, getCurrentUser);
 
 router.get("/searchToCreateChat", checkAuth, getUsersForCreateChat);
 
-router.get("/search", checkAuth, getUsersForSearch);
+router.post("/search", checkAuth, getUsersForSearch);
 
 router.route("/:id").get(checkAuth, getUserById);
 

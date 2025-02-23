@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { db } from "../config/db";
-import { chat_participants, chats, users } from "../config/schema";
+import {
+  chat_participants,
+  chats,
+  searchUsersSchema,
+  users,
+} from "../config/schema";
 import { APIResponse } from "../utils/general";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { httpStatus } from "../utils/constants";
@@ -56,13 +61,20 @@ export async function getCurrentUser(req: Request, res: Response) {
 }
 
 export async function getUsersForSearch(req: Request, res: Response) {
-  // const { s } = req.query;
-
-  // const searchValue = s || "";
-
   const currentUser = res.locals.user;
 
-  const searchValue = "";
+  const searchUsers = searchUsersSchema.safeParse(req.body);
+
+  if (!searchUsers.success) {
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "Validation error",
+      searchUsers.error
+    );
+  }
+
+  const { s, filtered } = searchUsers.data;
 
   const foundUsers = await db
     .select({
@@ -73,9 +85,9 @@ export async function getUsersForSearch(req: Request, res: Response) {
     .from(users)
     .where(
       and(
-        sql`(name LIKE ${`%${searchValue || ""}%`} OR email LIKE ${`%${
-          searchValue || ""
-        }%`}) AND ${ne(users.id, currentUser.id)}`
+        sql`(name LIKE ${`%${s || ""}%`} OR email LIKE ${`%${
+          s || ""
+        }%`}) AND ${ne(users.id, currentUser.id)} AND id NOT IN ${filtered}`
       )
     );
 

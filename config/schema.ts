@@ -111,7 +111,7 @@ export const loginUserRequest = insertUserSchema.pick({
 });
 
 export const inviteUsersToChatSchema = z.object({
-  userIds: z.array(z.number()),
+  users: z.array(z.number()),
 });
 
 export const sendMessageSchema = z.object({
@@ -129,6 +129,11 @@ export const createChatSchema = z.object({
 
 export const deleteChatHistorySchema = z.object({
   deleteForAll: z.boolean(),
+});
+
+export const searchUsersSchema = z.object({
+  s: z.string().optional(),
+  filtered: z.array(z.number()).optional(),
 });
 
 // Types

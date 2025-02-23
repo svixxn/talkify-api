@@ -380,7 +380,7 @@ export const addUserToChat = asyncWrapper(
       );
     }
 
-    const users = inviteUsersSchema.data.userIds;
+    const users = inviteUsersSchema.data.users;
 
     const usersToInsert = users.map((userId) => {
       return {
