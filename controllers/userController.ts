@@ -76,6 +76,14 @@ export async function getUsersForSearch(req: Request, res: Response) {
 
   const { s, filtered } = searchUsers.data;
 
+  let query = sql`(name LIKE ${`%${s || ""}%`} OR email LIKE ${`%${
+    s || ""
+  }%`}) AND ${ne(users.id, currentUser.id)}`;
+
+  if (filtered) {
+    query = query.append(sql`AND id NOT IN ${filtered}`);
+  }
+
   const foundUsers = await db
     .select({
       id: users.id,
@@ -83,13 +91,7 @@ export async function getUsersForSearch(req: Request, res: Response) {
       name: users.name,
     })
     .from(users)
-    .where(
-      and(
-        sql`(name LIKE ${`%${s || ""}%`} OR email LIKE ${`%${
-          s || ""
-        }%`}) AND ${ne(users.id, currentUser.id)} AND id NOT IN ${filtered}`
-      )
-    );
+    .where(and(query));
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     users: foundUsers,
@@ -98,6 +100,8 @@ export async function getUsersForSearch(req: Request, res: Response) {
 
 export async function getUsersForCreateChat(req: Request, res: Response) {
   const currentUser = res.locals.user;
+
+  console.log("here");
 
   const chatsWithCurrentUser = await db
     .select({ chatId: chats.id })

@@ -10,7 +10,7 @@ import {
   boolean,
   text,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 const getLocalDate = () => {
