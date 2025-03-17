@@ -4,6 +4,7 @@ import {
   chat_participants,
   chats,
   searchUsersSchema,
+  updateUserSchema,
   users,
 } from "../config/schema";
 import { APIResponse } from "../utils/general";
@@ -54,6 +55,41 @@ export async function getUserById(req: Request, res: Response) {
   });
 }
 
+export async function updateUser(req: Request, res: Response) {
+  const { id } = req.params;
+
+  if (!id) {
+    return APIResponse(res, httpStatus.BadRequest.code, "User id is required");
+  }
+
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, Number(id)));
+
+  if (user.length <= 0) {
+    return APIResponse(res, httpStatus.NotFound.code, "User not found");
+  }
+
+  const updateUserValidation = updateUserSchema.safeParse(req.body);
+
+  if (!updateUserValidation.success) {
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "Validation error",
+      updateUserValidation.error
+    );
+  }
+
+  await db
+    .update(users)
+    .set(updateUserValidation.data)
+    .where(eq(users.id, Number(id)));
+
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message);
+}
+
 export async function getCurrentUser(req: Request, res: Response) {
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     user: res.locals.user,
@@ -81,7 +117,7 @@ export async function getUsersForSearch(req: Request, res: Response) {
   }%`}) AND ${ne(users.id, currentUser.id)}`;
 
   if (filtered) {
-    query = query.append(sql`AND id NOT IN ${filtered}`);
+    query = sql`${query} AND id NOT IN ${filtered}`;
   }
 
   const foundUsers = await db
@@ -91,7 +127,7 @@ export async function getUsersForSearch(req: Request, res: Response) {
       name: users.name,
     })
     .from(users)
-    .where(and(query));
+    .where(query);
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
     users: foundUsers,

@@ -5,6 +5,7 @@ import {
   getUserById,
   getUsersForCreateChat,
   getUsersForSearch,
+  updateUser,
 } from "../controllers/userController";
 
 import { signIn, signUp } from "../controllers/authController";
@@ -20,7 +21,7 @@ router.get("/searchToCreateChat", checkAuth, getUsersForCreateChat);
 
 router.post("/search", checkAuth, getUsersForSearch);
 
-router.route("/:id").get(checkAuth, getUserById);
+router.route("/:id").get(checkAuth, getUserById).put(checkAuth, updateUser);
 
 router.post("/sign-in", signIn);
 

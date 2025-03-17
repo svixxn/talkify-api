@@ -99,6 +99,7 @@ export const chat_participants = pgTable("chat_participants", {
 export const insertUserSchema = createInsertSchema(users);
 export const insertChatSchema = createInsertSchema(chats);
 export const updateChatSchema = insertChatSchema.partial();
+
 export const signUpUserRequest = insertUserSchema.pick({
   name: true,
   age: true,
@@ -134,6 +135,18 @@ export const deleteChatHistorySchema = z.object({
 export const searchUsersSchema = z.object({
   s: z.string().optional(),
   filtered: z.array(z.number()).optional(),
+});
+
+export const updateUserSchema = z.object({
+  name: z.string().optional(),
+  age: z.number().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+  github: z.string().optional(),
+  twitter: z.string().optional(),
+  website: z.string().optional(),
+  avatar: z.string().optional(),
 });
 
 // Types
