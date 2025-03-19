@@ -80,6 +80,7 @@ export const messages = pgTable("messages", {
     .array()
     .default(sql`'{}'::text[]`),
   messageType: messageTypeEnum("messageType").notNull(),
+  isSystem: boolean("isSystem").default(false),
   parentId: integer("parentId"),
 });
 

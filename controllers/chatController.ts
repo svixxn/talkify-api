@@ -362,6 +362,7 @@ export const getChatMessages = asyncWrapper(
         senderName: users.name,
         parentId: messages.parentId,
         files: messages.files,
+        isSystem: messages.isSystem,
       })
       .from(messages)
       .leftJoin(users, eq(messages.senderId, users.id))
