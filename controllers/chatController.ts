@@ -11,11 +11,15 @@ import {
   updateChatSchema,
   users,
 } from "../config/schema";
-import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
-import { getChatParticipants, sortChatsByLastMessage } from "../utils/chat";
+import {
+  formatInviteUsersMessage,
+  getChatParticipants,
+  sortChatsByLastMessage,
+} from "../utils/chat";
 import { deleteMany } from "../utils/cloudinary";
 
 export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
@@ -77,11 +81,15 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
         )
         .leftJoin(users, eq(chat_participants.userId, users.id));
 
-      return {
-        ...prChat,
-        name: participants[0].name,
-        photo: participants[0].photo,
-      };
+      if (participants.length > 0) {
+        return {
+          ...prChat,
+          name: participants[0].name,
+          photo: participants[0].photo,
+        };
+      }
+
+      return prChat;
     })
   );
 
@@ -247,8 +255,8 @@ export const deleteChatFull = asyncWrapper(
 
 export const addUserToChat = asyncWrapper(
   async (req: Request, res: Response) => {
-    const currentUser = res.locals.user;
     const { chatId } = req.params;
+    const currentUser = res.locals.user;
 
     const inviteUsersSchema = inviteUsersToChatSchema.safeParse(req.body);
 
@@ -263,9 +271,16 @@ export const addUserToChat = asyncWrapper(
 
     const chatIdNumber = parseInt(chatId);
 
-    const users = inviteUsersSchema.data.users;
+    const usersIds = inviteUsersSchema.data.users;
 
-    const usersToInsert = users.map((userId) => {
+    const usersNames = await db
+      .select({
+        name: users.name,
+      })
+      .from(users)
+      .where(inArray(users.id, usersIds));
+
+    const usersToInsert = usersIds.map((userId) => {
       return {
         chatId: chatIdNumber,
         userId,
@@ -274,7 +289,37 @@ export const addUserToChat = asyncWrapper(
 
     await db.insert(chat_participants).values(usersToInsert);
 
-    return APIResponse(res, httpStatus.OK.code, "Users added to chat");
+    const formattedUsersNames = usersNames.map((user) => user.name);
+
+    const formattedSystemMessage =
+      formatInviteUsersMessage(formattedUsersNames) +
+      ", welcome to the chat! 👋 Feel free to start a conversation.";
+
+    const systemMessage = await db
+      .insert(messages)
+      .values({
+        chatId: chatIdNumber,
+        senderId: currentUser.id,
+        content: formattedSystemMessage,
+        isSystem: true,
+        messageType: "text",
+      })
+      .returning();
+
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+      systemMessage: {
+        id: systemMessage[0].id,
+        createdAt: systemMessage[0].createdAt,
+        updatedAt: systemMessage[0].updatedAt,
+        senderId: systemMessage[0].senderId,
+        chatId: systemMessage[0].chatId,
+        content: systemMessage[0].content,
+        messageType: systemMessage[0].messageType,
+        parentId: systemMessage[0].parentId,
+        files: systemMessage[0].files,
+        isSystem: systemMessage[0].isSystem,
+      },
+    });
   }
 );
 

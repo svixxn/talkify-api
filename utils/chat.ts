@@ -54,3 +54,7 @@ export const getChatParticipants = async (
 
   return participants;
 };
+
+export const formatInviteUsersMessage = (formattedUsersNames: string[]) => {
+  return formattedUsersNames.join(", ");
+};
