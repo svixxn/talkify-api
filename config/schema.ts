@@ -116,6 +116,10 @@ export const inviteUsersToChatSchema = z.object({
   users: z.array(z.number()),
 });
 
+export const removeUsersFromChatSchema = z.object({
+  users: z.array(z.number()),
+});
+
 export const sendMessageSchema = z.object({
   id: z.number(),
   content: z.string(),

@@ -7,6 +7,7 @@ import {
   inviteUsersToChatSchema,
   messages,
   NewChatParticipant,
+  removeUsersFromChatSchema,
   sendMessageSchema,
   updateChatSchema,
   users,
@@ -16,7 +17,7 @@ import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
 import {
-  formatInviteUsersMessage,
+  formatSystemMessageForUsers,
   getChatParticipants,
   sortChatsByLastMessage,
 } from "../utils/chat";
@@ -253,7 +254,7 @@ export const deleteChatFull = asyncWrapper(
   }
 );
 
-export const addUserToChat = asyncWrapper(
+export const addUsersToChat = asyncWrapper(
   async (req: Request, res: Response) => {
     const { chatId } = req.params;
     const currentUser = res.locals.user;
@@ -291,9 +292,83 @@ export const addUserToChat = asyncWrapper(
 
     const formattedUsersNames = usersNames.map((user) => user.name);
 
-    const formattedSystemMessage =
-      formatInviteUsersMessage(formattedUsersNames) +
-      ", welcome to the chat! 👋 Feel free to start a conversation.";
+    const formattedSystemMessage = formatSystemMessageForUsers(
+      formattedUsersNames,
+      "invite"
+    );
+
+    const systemMessage = await db
+      .insert(messages)
+      .values({
+        chatId: chatIdNumber,
+        senderId: currentUser.id,
+        content: formattedSystemMessage,
+        isSystem: true,
+        messageType: "text",
+      })
+      .returning();
+
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+      systemMessage: {
+        id: systemMessage[0].id,
+        createdAt: systemMessage[0].createdAt,
+        updatedAt: systemMessage[0].updatedAt,
+        senderId: systemMessage[0].senderId,
+        chatId: systemMessage[0].chatId,
+        content: systemMessage[0].content,
+        messageType: systemMessage[0].messageType,
+        parentId: systemMessage[0].parentId,
+        files: systemMessage[0].files,
+        isSystem: systemMessage[0].isSystem,
+      },
+    });
+  }
+);
+
+export const removeUsersFromChat = asyncWrapper(
+  async (req: Request, res: Response) => {
+    const { chatId } = req.params;
+    const currentUser = res.locals.user;
+
+    const removeUsersSchema = removeUsersFromChatSchema.safeParse(req.body);
+
+    if (!removeUsersSchema.success) {
+      return APIResponse(
+        res,
+        httpStatus.BadRequest.code,
+        "Validation error",
+        removeUsersSchema.error
+      );
+    }
+
+    const chatIdNumber = parseInt(chatId);
+
+    const usersIds = removeUsersSchema.data.users;
+
+    console.log(usersIds);
+
+    const usersNames = await db
+      .select({
+        name: users.name,
+      })
+      .from(users)
+      .where(inArray(users.id, usersIds));
+
+    await db
+      .delete(chat_participants)
+      .where(
+        and(
+          inArray(chat_participants.userId, usersIds),
+          eq(chat_participants.chatId, chatIdNumber)
+        )
+      );
+
+    const formattedUsersNames = usersNames.map((user) => user.name);
+
+    const formattedSystemMessage = formatSystemMessageForUsers(
+      formattedUsersNames,
+      "remove"
+    );
 
     const systemMessage = await db
       .insert(messages)

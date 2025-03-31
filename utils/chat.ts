@@ -55,6 +55,23 @@ export const getChatParticipants = async (
   return participants;
 };
 
-export const formatInviteUsersMessage = (formattedUsersNames: string[]) => {
-  return formattedUsersNames.join(", ");
+export const formatSystemMessageForUsers = (
+  formattedUsersNames: string[],
+  type: "invite" | "remove"
+) => {
+  const formattedUsersNamesString = formattedUsersNames.join(", ");
+
+  if (type === "invite")
+    return (
+      formattedUsersNamesString +
+      " welcome to the chat! 👋 Feel free to start a conversation."
+    );
+
+  if (type === "remove")
+    return (
+      formattedUsersNamesString +
+      ` ${
+        formattedUsersNames.length > 1 ? "were" : "was"
+      } removed from the chat.`
+    );
 };

@@ -5,13 +5,14 @@ import {
   getAllChats,
   createChat,
   updateChat,
-  addUserToChat,
+  addUsersToChat,
   getChatInfo,
   sendMessage,
   deleteChatFull,
   getChatMessages,
   deleteChatHistory,
   deleteChatMessage,
+  removeUsersFromChat,
 } from "../controllers/chatController";
 
 import { checkAvailability } from "../middlewares/roleMiddleware";
@@ -38,10 +39,9 @@ router
   .route("/:chatId/messages/:messageId")
   .delete(checkAvailability(), deleteChatMessage);
 
-router.post(
-  "/:chatId/invite",
-  checkAvailability(["admin", "moderator"]),
-  addUserToChat
-);
+router
+  .route("/:chatId/members")
+  .patch(checkAvailability(["admin", "moderator"]), addUsersToChat)
+  .post(checkAvailability(["admin", "moderator"]), removeUsersFromChat);
 
 export default router;
