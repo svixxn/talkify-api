@@ -13,6 +13,7 @@ import {
   deleteChatHistory,
   deleteChatMessage,
   removeUsersFromChat,
+  pinMessage,
 } from "../controllers/chatController";
 
 import { checkAvailability } from "../middlewares/roleMiddleware";
@@ -38,6 +39,8 @@ router
 router
   .route("/:chatId/messages/:messageId")
   .delete(checkAvailability(), deleteChatMessage);
+
+router.route("/:chatId/messages/:messageId/pin").post(pinMessage);
 
 router
   .route("/:chatId/members")

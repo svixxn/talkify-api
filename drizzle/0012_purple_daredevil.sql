@@ -1,0 +1,1 @@
+ALTER TABLE "messages" ADD COLUMN "isPinned" boolean DEFAULT false;

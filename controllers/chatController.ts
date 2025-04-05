@@ -12,7 +12,7 @@ import {
   updateChatSchema,
   users,
 } from "../config/schema";
-import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, is, ne, sql } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import { defaultChatPhoto, httpStatus } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
@@ -483,6 +483,7 @@ export const getChatMessages = asyncWrapper(
         parentId: messages.parentId,
         files: messages.files,
         isSystem: messages.isSystem,
+        isPinned: messages.isPinned,
       })
       .from(messages)
       .leftJoin(users, eq(messages.senderId, users.id))
@@ -592,3 +593,59 @@ export const deleteChatMessage = asyncWrapper(
     return APIResponse(res, httpStatus.Deleted.code, "Chat message deleted");
   }
 );
+
+export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
+  let { chatId, messageId } = req.params;
+  const currentUser = res.locals.user;
+
+  if (!messageId || !chatId) {
+    return APIResponse(
+      res,
+      httpStatus.BadRequest.code,
+      "Message id and chat id is required"
+    );
+  }
+
+  const updatedMessage = await db
+    .update(messages)
+    .set({ isPinned: true })
+    .where(
+      and(
+        eq(messages.chatId, Number(chatId)),
+        eq(messages.id, Number(messageId))
+      )
+    )
+    .returning();
+
+  const formattedSystemMessage = `${currentUser.name} pinned a message: ${
+    updatedMessage[0].content && updatedMessage[0].content?.length > 20
+      ? updatedMessage[0].content?.slice(0, 20) + "..."
+      : updatedMessage[0].content
+  }`;
+
+  const systemMessage = await db
+    .insert(messages)
+    .values({
+      chatId: Number(chatId),
+      senderId: currentUser.id,
+      content: formattedSystemMessage,
+      isSystem: true,
+      messageType: "text",
+    })
+    .returning();
+
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+    systemMessage: {
+      id: systemMessage[0].id,
+      createdAt: systemMessage[0].createdAt,
+      updatedAt: systemMessage[0].updatedAt,
+      senderId: systemMessage[0].senderId,
+      chatId: systemMessage[0].chatId,
+      content: systemMessage[0].content,
+      messageType: systemMessage[0].messageType,
+      parentId: systemMessage[0].parentId,
+      files: systemMessage[0].files,
+      isSystem: systemMessage[0].isSystem,
+    },
+  });
+});

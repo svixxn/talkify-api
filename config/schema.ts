@@ -82,6 +82,7 @@ export const messages = pgTable("messages", {
   messageType: messageTypeEnum("messageType").notNull(),
   isSystem: boolean("isSystem").default(false),
   parentId: integer("parentId"),
+  isPinned: boolean("isPinned").default(false),
 });
 
 export const chat_participants = pgTable("chat_participants", {
