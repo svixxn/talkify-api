@@ -83,6 +83,7 @@ export const messages = pgTable("messages", {
   isSystem: boolean("isSystem").default(false),
   parentId: integer("parentId"),
   isPinned: boolean("isPinned").default(false),
+  pinnedAt: timestamp("pinnedAt"),
 });
 
 export const chat_participants = pgTable("chat_participants", {

@@ -510,8 +510,27 @@ export const getChatMessages = asyncWrapper(
       return message;
     });
 
+    const latestPinnedMessage = await db
+      .select({
+        id: messages.id,
+        content: messages.content,
+        createdAt: messages.createdAt,
+        senderId: messages.senderId,
+        senderName: users.name,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(
+        and(eq(messages.chatId, chatIdNumber), eq(messages.isPinned, true))
+      )
+      .orderBy(desc(messages.pinnedAt))
+      .limit(1);
+
+    console.log("latestPinnedMessage", latestPinnedMessage);
+
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
       messages: messagesWithReplies,
+      pinnedMessage: latestPinnedMessage[0],
     });
   }
 );
@@ -606,9 +625,22 @@ export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
     );
   }
 
+  const currentMessage = await db
+    .select({ id: messages.id, isPinned: messages.isPinned })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.chatId, Number(chatId)),
+        eq(messages.id, Number(messageId))
+      )
+    );
+
   const updatedMessage = await db
     .update(messages)
-    .set({ isPinned: true })
+    .set({
+      isPinned: !currentMessage[0].isPinned,
+      pinnedAt: currentMessage[0].isPinned ? null : new Date(),
+    })
     .where(
       and(
         eq(messages.chatId, Number(chatId)),
@@ -617,35 +649,39 @@ export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
     )
     .returning();
 
-  const formattedSystemMessage = `${currentUser.name} pinned a message: ${
-    updatedMessage[0].content && updatedMessage[0].content?.length > 20
-      ? updatedMessage[0].content?.slice(0, 20) + "..."
-      : updatedMessage[0].content
-  }`;
+  if (updatedMessage[0].isPinned) {
+    const formattedSystemMessage = `${currentUser.name} pinned a message: ${
+      updatedMessage[0].content && updatedMessage[0].content?.length > 20
+        ? updatedMessage[0].content?.slice(0, 20) + "..."
+        : updatedMessage[0].content
+    }`;
 
-  const systemMessage = await db
-    .insert(messages)
-    .values({
-      chatId: Number(chatId),
-      senderId: currentUser.id,
-      content: formattedSystemMessage,
-      isSystem: true,
-      messageType: "text",
-    })
-    .returning();
+    const systemMessage = await db
+      .insert(messages)
+      .values({
+        chatId: Number(chatId),
+        senderId: currentUser.id,
+        content: formattedSystemMessage,
+        isSystem: true,
+        messageType: "text",
+      })
+      .returning();
 
-  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
-    systemMessage: {
-      id: systemMessage[0].id,
-      createdAt: systemMessage[0].createdAt,
-      updatedAt: systemMessage[0].updatedAt,
-      senderId: systemMessage[0].senderId,
-      chatId: systemMessage[0].chatId,
-      content: systemMessage[0].content,
-      messageType: systemMessage[0].messageType,
-      parentId: systemMessage[0].parentId,
-      files: systemMessage[0].files,
-      isSystem: systemMessage[0].isSystem,
-    },
-  });
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+      systemMessage: {
+        id: systemMessage[0].id,
+        createdAt: systemMessage[0].createdAt,
+        updatedAt: systemMessage[0].updatedAt,
+        senderId: systemMessage[0].senderId,
+        chatId: systemMessage[0].chatId,
+        content: systemMessage[0].content,
+        messageType: systemMessage[0].messageType,
+        parentId: systemMessage[0].parentId,
+        files: systemMessage[0].files,
+        isSystem: systemMessage[0].isSystem,
+      },
+    });
+  }
+
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message);
 });

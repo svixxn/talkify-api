@@ -35,13 +35,18 @@ io.on("connection", (socket) => {
     socket.to(parsedData.chatId).emit("delete-message", data);
   });
 
-  socket.on("is-typing", (currentChatId) => {
-    socket.to(currentChatId).emit("is-typing");
+  socket.on("pin-message", (data) => {
+    const parsedData = JSON.parse(data);
+    socket.to(parsedData.chatId).emit("pin-message", data);
   });
 
-  socket.on("stopped-typing", (currentChatId) => {
-    socket.to(currentChatId).emit("stopped-typing");
-  });
+  // socket.on("is-typing", (currentChatId) => {
+  //   socket.to(currentChatId).emit("is-typing");
+  // });
+
+  // socket.on("stopped-typing", (currentChatId) => {
+  //   socket.to(currentChatId).emit("stopped-typing");
+  // });
 
   socket.on("delete-chat", (chatId) => {
     socket.to(chatId).emit("delete-chat", chatId);
