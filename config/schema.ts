@@ -156,6 +156,10 @@ export const updateUserSchema = z.object({
   avatar: z.string().optional(),
 });
 
+export const updateChatMemberSchema = z.object({
+  role: z.enum(["admin", "moderator", "user"]).optional(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = z.infer<typeof signUpUserRequest>;

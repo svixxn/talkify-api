@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "../config/db";
 import { chat_participants, users } from "../config/schema";
 
@@ -50,7 +50,8 @@ export const getChatParticipants = async (
     })
     .from(chat_participants)
     .leftJoin(users, eq(chat_participants.userId, users.id))
-    .where(eq(chat_participants.chatId, chatId));
+    .where(eq(chat_participants.chatId, chatId))
+    .orderBy(asc(users.name));
 
   return participants;
 };

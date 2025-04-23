@@ -9,6 +9,7 @@ import {
   NewChatParticipant,
   removeUsersFromChatSchema,
   sendMessageSchema,
+  updateChatMemberSchema,
   updateChatSchema,
   users,
 } from "../config/schema";
@@ -526,8 +527,6 @@ export const getChatMessages = asyncWrapper(
       .orderBy(desc(messages.pinnedAt))
       .limit(1);
 
-    console.log("latestPinnedMessage", latestPinnedMessage);
-
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
       messages: messagesWithReplies,
       pinnedMessage: latestPinnedMessage[0],
@@ -685,3 +684,43 @@ export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
 
   return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message);
 });
+
+export const updateChatMember = asyncWrapper(
+  async (req: Request, res: Response) => {
+    const { chatId, memberId } = req.params;
+
+    const updateChatMember = updateChatMemberSchema.safeParse(req.body);
+
+    if (!updateChatMember.success) {
+      return APIResponse(
+        res,
+        httpStatus.BadRequest.code,
+        "Validation error",
+        updateChatMember.error
+      );
+    }
+
+    if (!chatId || !memberId) {
+      return APIResponse(
+        res,
+        httpStatus.BadRequest.code,
+        "Chat id and member is required"
+      );
+    }
+
+    const chatIdNumber = parseInt(chatId);
+    const memberIdNumber = parseInt(memberId);
+
+    await db
+      .update(chat_participants)
+      .set({ ...updateChatMember.data })
+      .where(
+        and(
+          eq(chat_participants.chatId, chatIdNumber),
+          eq(chat_participants.userId, memberIdNumber)
+        )
+      );
+
+    return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message);
+  }
+);

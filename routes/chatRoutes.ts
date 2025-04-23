@@ -14,6 +14,7 @@ import {
   deleteChatMessage,
   removeUsersFromChat,
   pinMessage,
+  updateChatMember,
 } from "../controllers/chatController";
 
 import { checkAvailability } from "../middlewares/roleMiddleware";
@@ -46,5 +47,9 @@ router
   .route("/:chatId/members")
   .patch(checkAvailability(["admin", "moderator"]), addUsersToChat)
   .post(checkAvailability(["admin", "moderator"]), removeUsersFromChat);
+
+router
+  .route("/:chatId/members/:memberId")
+  .patch(checkAvailability(["admin"]), updateChatMember);
 
 export default router;
