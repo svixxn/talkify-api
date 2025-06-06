@@ -34,26 +34,23 @@ export const createCheckoutSession = async (
   }
 };
 
-export const handleWebhook = async (event: any) => {
-  console.log("Received webhook event:", event);
-
-  //   switch (event.type) {
-  //     case "checkout.session.completed":
-  //       // Handle successful checkout session completion
-  //       console.log("Checkout session completed:", event.data.object);
-  //       break;
-  //     // Add more cases for other event types as needed
-  //     default:
-  //       console.warn(`Unhandled event type: ${event.type}`);
-  //   }
-
-  //   response.status(200).send("Webhook received");
+export const handleWebhook = async (event: Stripe.Event) => {
+  switch (event.type) {
+    case "invoice.paid":
+      handleInvoicePaid(event.data.object);
+      break;
+    default:
+      console.warn(`Unhandled event type: ${event.type}`);
+  }
 };
 
-const handleInvoicePaid = async (invoice: Stripe.Invoice) => {
-  const customerId = invoice.customer as string;
+const handleInvoicePaid = async (data: Stripe.Invoice) => {
+  const customerId = data.customer;
 
-  // Here you can implement your logic to handle the paid invoice
+  if (!customerId) {
+    console.error("No customer ID found in the invoice data.");
+    return;
+  }
+
   console.log(`Invoice for customer ${customerId} was paid successfully.`);
-  // For example, you might want to update the user's subscription status in your database
 };
