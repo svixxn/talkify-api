@@ -47,6 +47,8 @@ export const users = pgTable("users", {
   github: varchar("github", { length: 256 }),
   twitter: varchar("twitter", { length: 256 }),
   website: varchar("website", { length: 256 }),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 256 }),
+  isPremium: boolean("isPremium").default(false),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdate(getLocalDate),
 });
@@ -61,6 +63,7 @@ export const chats = pgTable("chats", {
     .default("https://placehold.co/600x600?text=Chat"),
   isDeleted: boolean("isDeleted").default(false),
   name: varchar("name", { length: 256 }).notNull(),
+  isPremium: boolean("isPremium").default(false),
   description: text("description"),
 });
 

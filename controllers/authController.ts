@@ -13,6 +13,7 @@ import { httpStatus } from "../utils/constants";
 import { addTimeToDate, signInJWT } from "../utils/auth";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import { createCustomer } from "../utils/stripe";
 
 export async function signUp(req: Request, res: Response) {
   try {
@@ -38,9 +39,16 @@ export async function signUp(req: Request, res: Response) {
             "There was a problem during hashing your password"
           );
 
+        const stripeCustomer = await createCustomer(user.email);
+
         const newUser = await db
           .insert(users)
-          .values({ ...user, slug, password: hash })
+          .values({
+            ...user,
+            slug,
+            password: hash,
+            stripeCustomerId: stripeCustomer.id,
+          })
           .returning({ id: users.id });
 
         return APIResponse(

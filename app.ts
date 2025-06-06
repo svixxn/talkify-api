@@ -4,6 +4,7 @@ import cors from "cors";
 
 import userRoutes from "./routes/userRoutes";
 import chatRoutes from "./routes/chatRoutes";
+import billingRoutes from "./routes/billingRoutes";
 
 dotenv.config();
 
@@ -19,5 +20,7 @@ app.get(["/api", "/api/version"], (req: Request, res: Response) => {
 app.use("/api/users", userRoutes);
 
 app.use("/api/chats", chatRoutes);
+
+app.use("/api/billing", billingRoutes);
 
 export default app;
