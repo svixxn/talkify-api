@@ -9,11 +9,9 @@ import {
 
 const router = express.Router();
 
-router.use(checkAuth);
-
 router
   .route("/premium-checkout-session")
-  .post(handleCreatePremiumCheckoutSession);
+  .post(checkAuth, handleCreatePremiumCheckoutSession);
 
 router.route("/webhook").post(handleBillingWebhook);
 
