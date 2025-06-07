@@ -67,8 +67,9 @@ export async function checkAuth(
       email: users.email,
       phone: users.phone,
       bio: users.bio,
-      joinedAt: users.createdAt,
+      createdAt: users.createdAt,
       stripeCustomerId: users.stripeCustomerId,
+      isPremium: users.isPremium,
     })
     .from(users)
     .where(eq(users.id, decoded.id))

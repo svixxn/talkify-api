@@ -38,6 +38,8 @@ export async function getUserById(req: Request, res: Response) {
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       phone: users.phone,
+      stripeCustomerId: users.stripeCustomerId,
+      isPremium: users.isPremium,
     })
     .from(users)
     .where(eq(users.id, Number(id)));

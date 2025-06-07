@@ -47,6 +47,7 @@ export const getChatParticipants = async (
       email: users.email,
       avatar: users.avatar,
       role: chat_participants.role,
+      isPremium: users.isPremium,
     })
     .from(chat_participants)
     .leftJoin(users, eq(chat_participants.userId, users.id))

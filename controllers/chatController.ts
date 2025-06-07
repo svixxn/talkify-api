@@ -15,7 +15,11 @@ import {
 } from "../config/schema";
 import { and, asc, desc, eq, inArray, is, ne, sql } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
-import { defaultChatPhoto, httpStatus } from "../utils/constants";
+import {
+  defaultChatPhoto,
+  freeChatMembersLimit,
+  httpStatus,
+} from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
 import {
   formatSystemMessageForUsers,
@@ -171,7 +175,12 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
 
       const chat = await db
         .insert(chats)
-        .values({ name, photo: defaultChatPhoto, isGroup: true })
+        .values({
+          name,
+          photo: defaultChatPhoto,
+          isGroup: true,
+          isPremium: currentUser.isPremium,
+        })
         .returning();
 
       const chatParticipantsToAdd = usersWhoToAdd.map((userId) => {
@@ -288,6 +297,28 @@ export const addUsersToChat = asyncWrapper(
         userId,
       };
     });
+
+    const isChatPremium = await db
+      .select({ isPremium: chats.isPremium })
+      .from(chats)
+      .where(eq(chats.id, chatIdNumber));
+
+    const chatParticipantsCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(chat_participants)
+      .where(eq(chat_participants.chatId, chatIdNumber));
+
+    if (
+      !isChatPremium[0].isPremium &&
+      Number(chatParticipantsCount[0].count) + usersToInsert.length >
+        freeChatMembersLimit
+    ) {
+      return APIResponse(
+        res,
+        httpStatus.Forbidden.code,
+        `You can not add more than ${freeChatMembersLimit} members to a free group chat`
+      );
+    }
 
     await db.insert(chat_participants).values(usersToInsert);
 
@@ -411,6 +442,7 @@ export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
       photo: chats.photo,
       isGroup: chats.isGroup,
       description: chats.description,
+      isPremium: chats.isPremium,
     })
     .from(chats)
     .where(eq(chats.id, chatIdNumber))
