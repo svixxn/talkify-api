@@ -163,6 +163,10 @@ export const updateChatMemberSchema = z.object({
   role: z.enum(["admin", "moderator", "user"]).optional(),
 });
 
+export const createPremiumCheckoutSessionSchema = z.object({
+  stripeCustomerId: z.string(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = z.infer<typeof signUpUserRequest>;
