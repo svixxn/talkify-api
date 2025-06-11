@@ -29,7 +29,7 @@ export const deleteMany = async ({
     const splittedPublicIds = public_id.split("/");
     const extractedPublicId = splittedPublicIds[
       splittedPublicIds.length - 1
-    ].replace(".png", "");
+    ].replace(/.jpg|.png/g, "");
 
     return extractedPublicId;
   });

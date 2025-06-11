@@ -1,9 +1,7 @@
-import { Request, Response } from "express";
 import Stripe from "stripe";
 import { db } from "../config/db";
 import { users } from "../config/schema";
 import { eq } from "drizzle-orm";
-import { APIResponse } from "./general";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
