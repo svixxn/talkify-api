@@ -17,18 +17,21 @@ import { and, asc, desc, eq, inArray, is, ne, sql } from "drizzle-orm";
 import { APIResponse } from "../utils/general";
 import {
   defaultChatPhoto,
+  ENCRYPTION_SHIFT,
   freeChatMembersLimit,
   httpStatus,
 } from "../utils/constants";
 import { asyncWrapper } from "../utils/general";
 import {
+  decryptMessage,
+  encryptMessage,
   formatSystemMessageForUsers,
   getChatParticipants,
   sortChatsByLastMessage,
 } from "../utils/chat";
 import { deleteMany } from "../utils/cloudinary";
 
-export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
+export const getAllChats = asyncWrapper(async (req, res) => {
   const currentUser = res.locals.user;
   const { s } = req.query;
 
@@ -67,7 +70,14 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
       )
     );
 
-  const privateChats = userChats.filter((chat) => !chat.isGroup);
+  const decryptedUserChats = userChats.map((chat) => ({
+    ...chat,
+    lastMessage: chat.lastMessage
+      ? decryptMessage(chat.lastMessage, ENCRYPTION_SHIFT)
+      : chat.lastMessage,
+  }));
+
+  const privateChats = decryptedUserChats.filter((chat) => !chat.isGroup);
 
   const privateChatsWithUpdatedNames = await Promise.all(
     privateChats.map(async (prChat) => {
@@ -99,7 +109,7 @@ export const getAllChats = asyncWrapper(async (req: Request, res: Response) => {
     })
   );
 
-  const groupChats = userChats.filter((chat) => chat.isGroup);
+  const groupChats = decryptedUserChats.filter((chat) => chat.isGroup);
 
   const finalChats = sortChatsByLastMessage([
     ...groupChats,
@@ -523,9 +533,16 @@ export const getChatMessages = asyncWrapper(
       .where(eq(messages.chatId, chatIdNumber))
       .orderBy(asc(messages.createdAt));
 
-    const messagesWithReplies = chatMessages.map((message) => {
+    const decryptedChatMessages = chatMessages.map((message) => ({
+      ...message,
+      content: message.content
+        ? decryptMessage(message.content, ENCRYPTION_SHIFT)
+        : "",
+    }));
+
+    const messagesWithReplies = decryptedChatMessages.map((message) => {
       if (message.parentId) {
-        const parentMessage = chatMessages.find(
+        const parentMessage = decryptedChatMessages.find(
           (msg) => msg.id === message.parentId
         );
         if (!parentMessage) return message;
@@ -539,11 +556,10 @@ export const getChatMessages = asyncWrapper(
           },
         };
       }
-
       return message;
     });
 
-    const latestPinnedMessage = await db
+    const latestPinnedMessageRaw = await db
       .select({
         id: messages.id,
         content: messages.content,
@@ -559,9 +575,19 @@ export const getChatMessages = asyncWrapper(
       .orderBy(desc(messages.pinnedAt))
       .limit(1);
 
+    let pinnedMessage = undefined;
+    if (latestPinnedMessageRaw.length > 0) {
+      pinnedMessage = {
+        ...latestPinnedMessageRaw[0],
+        content: latestPinnedMessageRaw[0].content
+          ? decryptMessage(latestPinnedMessageRaw[0].content, ENCRYPTION_SHIFT)
+          : "",
+      };
+    }
+
     return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
       messages: messagesWithReplies,
-      pinnedMessage: latestPinnedMessage[0],
+      pinnedMessage: pinnedMessage,
     });
   }
 );
@@ -584,8 +610,14 @@ export const sendMessage = asyncWrapper(async (req: Request, res: Response) => {
 
   const chatIdNumber = parseInt(chatId);
 
+  const encryptedContent = encryptMessage(
+    sendMessageParseResult.data.content,
+    ENCRYPTION_SHIFT
+  );
+
   const newMessage = {
     ...sendMessageParseResult.data,
+    content: encryptedContent,
     chatId: chatIdNumber,
     senderId: currentUser.id,
   };

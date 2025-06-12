@@ -77,3 +77,26 @@ export const formatSystemMessageForUsers = (
       } removed from the chat.`
     );
 };
+
+export const encryptMessage = (message: string, shift: number) => {
+  let encryptedMessage = "";
+  for (let i = 0; i < message.length; i++) {
+    let charCode = message.charCodeAt(i);
+    let newCharCode = charCode + shift;
+    newCharCode = ((newCharCode % 65536) + 65536) % 65536;
+    encryptedMessage += String.fromCharCode(newCharCode);
+  }
+  return encryptedMessage;
+};
+
+export const decryptMessage = (encryptedMessage: string, shift: number) => {
+  let decryptedMessage = "";
+  for (let i = 0; i < encryptedMessage.length; i++) {
+    let charCode = encryptedMessage.charCodeAt(i);
+    let newCharCode = charCode - shift;
+    newCharCode = ((newCharCode % 65536) + 65536) % 65536;
+
+    decryptedMessage += String.fromCharCode(newCharCode);
+  }
+  return decryptedMessage;
+};

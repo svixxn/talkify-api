@@ -32,3 +32,5 @@ export const httpStatus = {
 export const defaultChatPhoto = "https://placehold.co/600x600?text=Chat";
 
 export const freeChatMembersLimit = 5;
+
+export const ENCRYPTION_SHIFT = 5;
