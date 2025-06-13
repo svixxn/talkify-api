@@ -51,12 +51,20 @@ export async function signUp(req: Request, res: Response) {
           })
           .returning({ id: users.id });
 
+        const { token, expiresIn, error } = signInJWT(newUser[0].id.toString());
+
+        const expiresInDate = addTimeToDate(expiresIn || "");
+
+        res.cookie("authToken", token, { expires: expiresInDate });
+
         return APIResponse(
           res,
           httpStatus.OK.code,
           "User created successfully",
           {
             userId: newUser[0].id,
+            token,
+            expiresIn,
           }
         );
       });

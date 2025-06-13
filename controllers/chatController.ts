@@ -74,7 +74,9 @@ export const getAllChats = asyncWrapper(async (req, res) => {
     ...chat,
     lastMessage: chat.lastMessage
       ? decryptMessage(chat.lastMessage, ENCRYPTION_SHIFT)
-      : chat.lastMessage,
+      : chat.lastMessageDate
+      ? "[FILE]"
+      : null,
   }));
 
   const privateChats = decryptedUserChats.filter((chat) => !chat.isGroup);
@@ -334,9 +336,9 @@ export const addUsersToChat = asyncWrapper(
 
     const formattedUsersNames = usersNames.map((user) => user.name);
 
-    const formattedSystemMessage = formatSystemMessageForUsers(
-      formattedUsersNames,
-      "invite"
+    const formattedSystemMessage = encryptMessage(
+      formatSystemMessageForUsers(formattedUsersNames, "invite"),
+      ENCRYPTION_SHIFT
     );
 
     const systemMessage = await db
@@ -407,9 +409,9 @@ export const removeUsersFromChat = asyncWrapper(
 
     const formattedUsersNames = usersNames.map((user) => user.name);
 
-    const formattedSystemMessage = formatSystemMessageForUsers(
-      formattedUsersNames,
-      "remove"
+    const formattedSystemMessage = encryptMessage(
+      formatSystemMessageForUsers(formattedUsersNames, "remove"),
+      ENCRYPTION_SHIFT
     );
 
     const systemMessage = await db
@@ -715,8 +717,13 @@ export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
   if (updatedMessage[0].isPinned) {
     const formattedSystemMessage = `${currentUser.name} pinned a message: ${
       updatedMessage[0].content && updatedMessage[0].content?.length > 20
-        ? updatedMessage[0].content?.slice(0, 20) + "..."
+        ? decryptMessage(
+            updatedMessage[0].content?.slice(0, 20),
+            ENCRYPTION_SHIFT
+          ) + "..."
         : updatedMessage[0].content
+        ? decryptMessage(updatedMessage[0].content, ENCRYPTION_SHIFT)
+        : ""
     }`;
 
     const systemMessage = await db
@@ -724,7 +731,7 @@ export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
       .values({
         chatId: Number(chatId),
         senderId: currentUser.id,
-        content: formattedSystemMessage,
+        content: encryptMessage(formattedSystemMessage, ENCRYPTION_SHIFT),
         isSystem: true,
         messageType: "text",
       })
@@ -737,7 +744,7 @@ export const pinMessage = asyncWrapper(async (req: Request, res: Response) => {
         updatedAt: systemMessage[0].updatedAt,
         senderId: systemMessage[0].senderId,
         chatId: systemMessage[0].chatId,
-        content: systemMessage[0].content,
+        content: formattedSystemMessage,
         messageType: systemMessage[0].messageType,
         parentId: systemMessage[0].parentId,
         files: systemMessage[0].files,

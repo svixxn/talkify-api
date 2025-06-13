@@ -76,6 +76,8 @@ export const formatSystemMessageForUsers = (
         formattedUsersNames.length > 1 ? "were" : "was"
       } removed from the chat.`
     );
+
+  return "";
 };
 
 export const encryptMessage = (message: string, shift: number) => {
