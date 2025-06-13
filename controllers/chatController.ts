@@ -185,6 +185,17 @@ export const createChat = asyncWrapper(async (req: Request, res: Response) => {
           "You should specify a name to create a group chat"
         );
 
+      if (
+        !currentUser.isPremium &&
+        usersWhoToAdd.length >= freeChatMembersLimit
+      ) {
+        return APIResponse(
+          res,
+          httpStatus.Forbidden.code,
+          `You can not create a group chat with more than ${freeChatMembersLimit} members in it. Please, upgrade to premium to create a group chat with more members`
+        );
+      }
+
       const chat = await db
         .insert(chats)
         .values({
