@@ -347,9 +347,9 @@ export const addUsersToChat = asyncWrapper(
 
     const formattedUsersNames = usersNames.map((user) => user.name);
 
-    const formattedSystemMessage = encryptMessage(
-      formatSystemMessageForUsers(formattedUsersNames, "invite"),
-      ENCRYPTION_SHIFT
+    const formattedSystemMessage = formatSystemMessageForUsers(
+      formattedUsersNames,
+      "invite"
     );
 
     const systemMessage = await db
@@ -357,7 +357,7 @@ export const addUsersToChat = asyncWrapper(
       .values({
         chatId: chatIdNumber,
         senderId: currentUser.id,
-        content: formattedSystemMessage,
+        content: encryptMessage(formattedSystemMessage, ENCRYPTION_SHIFT),
         isSystem: true,
         messageType: "text",
       })
@@ -370,7 +370,7 @@ export const addUsersToChat = asyncWrapper(
         updatedAt: systemMessage[0].updatedAt,
         senderId: systemMessage[0].senderId,
         chatId: systemMessage[0].chatId,
-        content: systemMessage[0].content,
+        content: formattedSystemMessage,
         messageType: systemMessage[0].messageType,
         parentId: systemMessage[0].parentId,
         files: systemMessage[0].files,
@@ -420,9 +420,9 @@ export const removeUsersFromChat = asyncWrapper(
 
     const formattedUsersNames = usersNames.map((user) => user.name);
 
-    const formattedSystemMessage = encryptMessage(
-      formatSystemMessageForUsers(formattedUsersNames, "remove"),
-      ENCRYPTION_SHIFT
+    const formattedSystemMessage = formatSystemMessageForUsers(
+      formattedUsersNames,
+      "remove"
     );
 
     const systemMessage = await db
@@ -430,7 +430,7 @@ export const removeUsersFromChat = asyncWrapper(
       .values({
         chatId: chatIdNumber,
         senderId: currentUser.id,
-        content: formattedSystemMessage,
+        content: encryptMessage(formattedSystemMessage, ENCRYPTION_SHIFT),
         isSystem: true,
         messageType: "text",
       })
@@ -443,7 +443,7 @@ export const removeUsersFromChat = asyncWrapper(
         updatedAt: systemMessage[0].updatedAt,
         senderId: systemMessage[0].senderId,
         chatId: systemMessage[0].chatId,
-        content: systemMessage[0].content,
+        content: formattedSystemMessage,
         messageType: systemMessage[0].messageType,
         parentId: systemMessage[0].parentId,
         files: systemMessage[0].files,
@@ -452,6 +452,58 @@ export const removeUsersFromChat = asyncWrapper(
     });
   }
 );
+
+export const leaveChat = asyncWrapper(async (req: Request, res: Response) => {
+  const { chatId } = req.params;
+  const currentUser = res.locals.user;
+
+  const chatIdNumber = parseInt(chatId);
+
+  await db
+    .delete(chat_participants)
+    .where(
+      and(
+        eq(chat_participants.chatId, chatIdNumber),
+        eq(chat_participants.userId, currentUser.id)
+      )
+    );
+
+  const chat = await db
+    .select({ isGroup: chats.isGroup })
+    .from(chats)
+    .where(eq(chats.id, chatIdNumber));
+
+  if (!chat[0].isGroup)
+    await db.delete(chats).where(eq(chats.id, chatIdNumber));
+
+  const systemMessageContent = `${currentUser.name} left the chat`;
+
+  const systemMessage = await db
+    .insert(messages)
+    .values({
+      chatId: chatIdNumber,
+      senderId: currentUser.id,
+      content: encryptMessage(systemMessageContent, ENCRYPTION_SHIFT),
+      isSystem: true,
+      messageType: "text",
+    })
+    .returning();
+
+  return APIResponse(res, httpStatus.OK.code, httpStatus.OK.message, {
+    systemMessage: {
+      id: systemMessage[0].id,
+      createdAt: systemMessage[0].createdAt,
+      updatedAt: systemMessage[0].updatedAt,
+      senderId: systemMessage[0].senderId,
+      chatId: systemMessage[0].chatId,
+      content: systemMessageContent,
+      messageType: systemMessage[0].messageType,
+      parentId: systemMessage[0].parentId,
+      files: systemMessage[0].files,
+      isSystem: systemMessage[0].isSystem,
+    },
+  });
+});
 
 export const getChatInfo = asyncWrapper(async (req: Request, res: Response) => {
   const currentUser = res.locals.user;

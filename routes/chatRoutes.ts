@@ -15,6 +15,7 @@ import {
   removeUsersFromChat,
   pinMessage,
   updateChatMember,
+  leaveChat,
 } from "../controllers/chatController";
 
 import { checkAvailability } from "../middlewares/roleMiddleware";
@@ -30,6 +31,8 @@ router
   .get(checkAvailability(), getChatInfo)
   .patch(checkAvailability(["admin", "moderator"]), updateChat)
   .delete(checkAvailability(["admin"]), deleteChatFull);
+
+router.route("/:chatId/leave").delete(checkAvailability(), leaveChat);
 
 router
   .route("/:chatId/messages")
@@ -50,6 +53,7 @@ router
 
 router
   .route("/:chatId/members/:memberId")
-  .patch(checkAvailability(["admin"]), updateChatMember);
+  .patch(checkAvailability(["admin"]), updateChatMember)
+  .delete(checkAvailability(), leaveChat);
 
 export default router;
