@@ -473,8 +473,14 @@ export const leaveChat = asyncWrapper(async (req: Request, res: Response) => {
     .from(chats)
     .where(eq(chats.id, chatIdNumber));
 
-  if (!chat[0].isGroup)
+  if (!chat[0].isGroup) {
     await db.delete(chats).where(eq(chats.id, chatIdNumber));
+    return APIResponse(
+      res,
+      httpStatus.OK.code,
+      "You left the chat and it was deleted successfully"
+    );
+  }
 
   const systemMessageContent = `${currentUser.name} left the chat`;
 
